@@ -991,741 +991,760 @@ namespace URDFConverterAddIn
 
 
 
-
         // =====================================================
         //  LOG DE ASSET / APPEARANCE (recorre TODOS los AssetValue)
         // =====================================================
         private static void LogAssetInfo(string ownerKind, string ownerName, Asset app)
         {
-            if (app == null)
-            {
-                DebugLog("MESH",
-                    "LogAssetInfo: " + ownerKind + "='" + ownerName + "' sin Asset (null).");
-                return;
-            }
-
-            string appDisplayName = "(sin nombre)";
-            try { appDisplayName = app.DisplayName; }
-            catch { appDisplayName = "(error DisplayName)"; }
-
-            int count = 0;
-            try { count = app.Count; } catch { count = -1; }
-
-            DebugLog("MESH",
-                "LogAssetInfo: " + ownerKind +
-                "='" + ownerName +
-                "', Asset.DisplayName='" + appDisplayName +
-                "', AssetValues: Count=" +
-                count.ToString(CultureInfo.InvariantCulture));
-
-            try
-            {
-                foreach (AssetValue av in app)
+                if (app == null)
                 {
-                    if (av == null)
-                    {
-                        DebugLog("MESH", "    [AssetValue null]");
-                        continue;
-                    }
-
-                    string avName = "";
-                    string avDisplay = "";
-                    bool avReadOnly = false;
-                    string avType = "";
-
-                    try { avName = av.Name; } catch { }
-                    try { avDisplay = av.DisplayName; } catch { }
-                    try { avReadOnly = av.IsReadOnly; } catch { }
-                    try { avType = av.ValueType.ToString(); } catch { }
-
-                    DebugLog("MESH",
-                        "    AssetValue: Name='" + avName +
-                        "', DisplayName='" + avDisplay +
-                        "', ValueType=" + avType +
-                        ", IsReadOnly=" + avReadOnly.ToString());
-
-                    // Si es de tipo COLOR, logear también RGBA
-                    try
-                    {
-                        if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
-                        {
-                            ColorAssetValue cav = av as ColorAssetValue;
-                            if (cav != null)
-                            {
-                                Inventor.Color invCol = cav.Value as Inventor.Color;
-                                if (invCol != null)
-                                {
-                                    DebugLog("MESH",
-                                        "      Color RGBA=(" +
-                                        invCol.Red.ToString(CultureInfo.InvariantCulture) + "," +
-                                        invCol.Green.ToString(CultureInfo.InvariantCulture) + "," +
-                                        invCol.Blue.ToString(CultureInfo.InvariantCulture) + "," +
-                                        invCol.Opacity.ToString(CultureInfo.InvariantCulture) + ")");
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
                         DebugLog("MESH",
-                            "      [Error leyendo ColorAssetValue.Value]");
-                    }
+                                "LogAssetInfo: " + ownerKind + "='" + ownerName + "' sin Asset (null).");
+                        return;
                 }
-            }
-            catch
-            {
-                DebugLog("MESH", "LogAssetInfo: error al iterar AssetValues.");
-            }
+
+                string appDisplayName = "(sin nombre)";
+                try { appDisplayName = app.DisplayName; }
+                catch { appDisplayName = "(error DisplayName)"; }
+
+                int count = 0;
+                try { count = app.Count; } catch { count = -1; }
+
+                DebugLog("MESH",
+                        "LogAssetInfo: " + ownerKind +
+                        "='" + ownerName +
+                        "', Asset.DisplayName='" + appDisplayName +
+                        "', AssetValues: Count=" +
+                        count.ToString(CultureInfo.InvariantCulture));
+
+                try
+                {
+                        foreach (AssetValue av in app)
+                        {
+                                if (av == null)
+                                {
+                                        DebugLog("MESH", "    [AssetValue null]");
+                                        continue;
+                                }
+
+                                string avName = "";
+                                string avDisplay = "";
+                                bool avReadOnly = false;
+                                string avType = "";
+
+                                try { avName = av.Name; } catch { }
+                                try { avDisplay = av.DisplayName; } catch { }
+                                try { avReadOnly = av.IsReadOnly; } catch { }
+                                try { avType = av.ValueType.ToString(); } catch { }
+
+                                DebugLog("MESH",
+                                        "    AssetValue: Name='" + avName +
+                                        "', DisplayName='" + avDisplay +
+                                        "', ValueType=" + avType +
+                                        ", IsReadOnly=" + avReadOnly.ToString());
+
+                                // Si es de tipo COLOR, logear también RGBA
+                                try
+                                {
+                                        if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                                        {
+                                                ColorAssetValue cav = av as ColorAssetValue;
+                                                if (cav != null)
+                                                {
+                                                        Inventor.Color invCol = cav.Value as Inventor.Color;
+                                                        if (invCol != null)
+                                                        {
+                                                                DebugLog("MESH",
+                                                                        "      Color RGBA=(" +
+                                                                        invCol.Red.ToString(CultureInfo.InvariantCulture) + "," +
+                                                                        invCol.Green.ToString(CultureInfo.InvariantCulture) + "," +
+                                                                        invCol.Blue.ToString(CultureInfo.InvariantCulture) + "," +
+                                                                        invCol.Opacity.ToString(CultureInfo.InvariantCulture) + ")");
+                                                        }
+                                                }
+                                        }
+                                }
+                                catch
+                                {
+                                        DebugLog("MESH",
+                                                "      [Error leyendo ColorAssetValue.Value]");
+                                }
+                        }
+                }
+                catch
+                {
+                        DebugLog("MESH", "LogAssetInfo: error al iterar AssetValues.");
+                }
         }
 
         // =====================================================
         //  Helper: buscar color por nombre de AssetValue
-        //          (ej: wallpaint_color)
+        //          (ej: wallpaint_color, plasticvinyl_color, etc.)
         // =====================================================
         private static bool TryGetColorFromNamedAssetValue(
-            Asset app,
-            string targetName,
-            out double r,
-            out double g,
-            out double b)
+                Asset app,
+                string targetName,
+                out double r,
+                out double g,
+                out double b)
         {
-            r = 0.8;
-            g = 0.8;
-            b = 0.8;
+                r = 0.8;
+                g = 0.8;
+                b = 0.8;
 
-            if (app == null || string.IsNullOrEmpty(targetName))
-                return false;
+                if (app == null || string.IsNullOrEmpty(targetName))
+                        return false;
 
-            try
-            {
-                foreach (AssetValue av in app)
+                try
                 {
-                    if (av == null)
-                        continue;
-
-                    string avName = "";
-                    try { avName = av.Name; } catch { avName = ""; }
-
-                    if (string.IsNullOrEmpty(avName))
-                        continue;
-
-                    if (!string.Equals(avName, targetName, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor)
-                        continue;
-
-                    ColorAssetValue cav = av as ColorAssetValue;
-                    if (cav == null)
-                        continue;
-
-                    Inventor.Color invCol = cav.Value as Inventor.Color;
-                    if (invCol == null)
-                        continue;
-
-                    r = invCol.Red   / 255.0;
-                    g = invCol.Green / 255.0;
-                    b = invCol.Blue  / 255.0;
-
-                    DebugLog("MESH",
-                        "TryGetColorFromNamedAssetValue('" + targetName +
-                        "'): RGB=(" +
-                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        b.ToString("F3", CultureInfo.InvariantCulture) + ")");
-                    return true;
-                }
-            }
-            catch
-            {
-                DebugLog("MESH",
-                    "TryGetColorFromNamedAssetValue: error buscando '" + targetName + "'.");
-            }
-
-            return false;
-        }
-
-        // =====================================================
-        //  Helper central: PRIORIDAD de color dentro de un Asset
-        //
-        //  Orden:
-        //    1) wallpaint_color
-        //    2) generic_diffuse
-        //    3) primer AssetValue COLOR (ej: common_tint_color)
-        // =====================================================
-        private static bool TryGetColorFromAssetWithPriority(
-            Asset app,
-            string ownerKind,
-            string ownerName,
-            out double r,
-            out double g,
-            out double b)
-        {
-            // Por defecto gris
-            r = 0.8;
-            g = 0.8;
-            b = 0.8;
-
-            if (app == null)
-            {
-                DebugLog("MESH",
-                    "TryGetColorFromAssetWithPriority: " + ownerKind +
-                    "='" + ownerName + "' sin Asset, usando gris 0.8.");
-                return false;
-            }
-
-            // Log completo (para debug y para ver wallpaint/common_tint/etc.)
-            LogAssetInfo(ownerKind, ownerName, app);
-
-            // 1) PRIORIDAD: wallpaint_color (caso LEGO rojo, 178,0,0,1)
-            if (TryGetColorFromNamedAssetValue(app, "wallpaint_color", out r, out g, out b))
-            {
-                DebugLog("MESH",
-                    "TryGetColorFromAssetWithPriority: usando wallpaint_color para " +
-                    ownerKind + "='" + ownerName + "'.");
-                return true;
-            }
-
-            // 2) generic_diffuse, si existe
-            try
-            {
-                AssetValue avDif = app["generic_diffuse"];
-                if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
-                {
-                    ColorAssetValue difCav = avDif as ColorAssetValue;
-                    if (difCav != null)
-                    {
-                        Inventor.Color invCol1 = difCav.Value as Inventor.Color;
-                        if (invCol1 != null)
+                        foreach (AssetValue av in app)
                         {
-                            r = invCol1.Red   / 255.0;
-                            g = invCol1.Green / 255.0;
-                            b = invCol1.Blue  / 255.0;
+                                if (av == null)
+                                        continue;
 
-                            DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: " + ownerKind +
-                                "='" + ownerName + "', generic_diffuse=(" +
-                                r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                b.ToString("F3", CultureInfo.InvariantCulture) + ")");
-                            return true;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                DebugLog("MESH",
-                    "TryGetColorFromAssetWithPriority: " + ownerKind +
-                    "='" + ownerName + "' sin generic_diffuse válido.");
-            }
+                                string avName = "";
+                                try { avName = av.Name; } catch { avName = ""; }
 
-            // 3) Fallback: primer AssetValue COLOR que exista
-            try
-            {
-                foreach (AssetValue av in app)
-                {
-                    if (av == null)
-                        continue;
+                                if (string.IsNullOrEmpty(avName))
+                                        continue;
 
-                    if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
-                    {
-                        ColorAssetValue cav = av as ColorAssetValue;
-                        if (cav != null)
-                        {
-                            Inventor.Color invCol = cav.Value as Inventor.Color;
-                            if (invCol != null)
-                            {
+                                if (!string.Equals(avName, targetName, StringComparison.OrdinalIgnoreCase))
+                                        continue;
+
+                                if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor)
+                                        continue;
+
+                                ColorAssetValue cav = av as ColorAssetValue;
+                                if (cav == null)
+                                        continue;
+
+                                Inventor.Color invCol = cav.Value as Inventor.Color;
+                                if (invCol == null)
+                                        continue;
+
                                 r = invCol.Red   / 255.0;
                                 g = invCol.Green / 255.0;
                                 b = invCol.Blue  / 255.0;
 
                                 DebugLog("MESH",
-                                    "TryGetColorFromAssetWithPriority: " + ownerKind +
-                                    "='" + ownerName +
-                                    "', usando primer AssetValue COLOR Name='" +
-                                    av.Name + "', DisplayName='" + av.DisplayName + "', RGB=(" +
-                                    r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                    g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                    b.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                                        "TryGetColorFromNamedAssetValue('" + targetName +
+                                        "'): RGB=(" +
+                                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                        b.ToString("F3", CultureInfo.InvariantCulture) + ")");
                                 return true;
-                            }
                         }
-                    }
                 }
-            }
-            catch
-            {
-                DebugLog("MESH",
-                    "TryGetColorFromAssetWithPriority: error buscando AssetValue COLOR en " +
-                    ownerKind + "='" + ownerName + "'.");
-            }
+                catch
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromNamedAssetValue: error buscando '" + targetName + "'.");
+                }
 
-            DebugLog("MESH",
-                "TryGetColorFromAssetWithPriority: sin color, usando gris 0.8 para " +
-                ownerKind + "='" + ownerName + "'.");
-            return false;
+                return false;
+        }
+
+        // =====================================================
+        //  Helper central: PRIORIDAD de color dentro de un Asset
+        //
+        //  Orden final:
+        //    1) plasticvinyl_color   (plásticos LEGO, vinilos, etc.)
+        //    2) wallpaint_color
+        //    3) common_Tint_color    (muchos materiales "Suave - Rojo")
+        //    4) generic_diffuse
+        //    5) primer AssetValue COLOR que exista
+        // =====================================================
+        private static bool TryGetColorFromAssetWithPriority(
+                Asset app,
+                string ownerKind,
+                string ownerName,
+                out double r,
+                out double g,
+                out double b)
+        {
+                // Por defecto gris
+                r = 0.8;
+                g = 0.8;
+                b = 0.8;
+
+                if (app == null)
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: " + ownerKind +
+                                "='" + ownerName + "' sin Asset, usando gris 0.8.");
+                        return false;
+                }
+
+                // Log completo (para debug y para ver plasticvinyl, wallpaint, common_tint, etc.)
+                LogAssetInfo(ownerKind, ownerName, app);
+
+                // 1) PRIORIDAD MÁXIMA: plasticvinyl_color  (carrito LEGO rojo)
+                if (TryGetColorFromNamedAssetValue(app, "plasticvinyl_color", out r, out g, out b))
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: usando plasticvinyl_color para " +
+                                ownerKind + "='" + ownerName + "'.");
+                        return true;
+                }
+
+                // 2) wallpaint_color
+                if (TryGetColorFromNamedAssetValue(app, "wallpaint_color", out r, out g, out b))
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: usando wallpaint_color para " +
+                                ownerKind + "='" + ownerName + "'.");
+                        return true;
+                }
+
+                // 3) common_Tint_color (muchos materiales "Suave - Rojo" usan esto)
+                if (TryGetColorFromNamedAssetValue(app, "common_Tint_color", out r, out g, out b))
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: usando common_Tint_color para " +
+                                ownerKind + "='" + ownerName + "'.");
+                        return true;
+                }
+
+                // 4) generic_diffuse, si existe
+                try
+                {
+                        AssetValue avDif = app["generic_diffuse"];
+                        if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                        {
+                                ColorAssetValue difCav = avDif as ColorAssetValue;
+                                if (difCav != null)
+                                {
+                                        Inventor.Color invCol1 = difCav.Value as Inventor.Color;
+                                        if (invCol1 != null)
+                                        {
+                                                r = invCol1.Red   / 255.0;
+                                                g = invCol1.Green / 255.0;
+                                                b = invCol1.Blue  / 255.0;
+
+                                                DebugLog("MESH",
+                                                        "TryGetColorFromAssetWithPriority: " + ownerKind +
+                                                        "='" + ownerName + "', generic_diffuse=(" +
+                                                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                                        b.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                                                return true;
+                                        }
+                                }
+                        }
+                }
+                catch
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: " + ownerKind +
+                                "='" + ownerName + "' sin generic_diffuse válido.");
+                }
+
+                // 5) Fallback: primer AssetValue COLOR que exista
+                try
+                {
+                        foreach (AssetValue av in app)
+                        {
+                                if (av == null)
+                                        continue;
+
+                                if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                                {
+                                        ColorAssetValue cav = av as ColorAssetValue;
+                                        if (cav != null)
+                                        {
+                                                Inventor.Color invCol = cav.Value as Inventor.Color;
+                                                if (invCol != null)
+                                                {
+                                                        r = invCol.Red   / 255.0;
+                                                        g = invCol.Green / 255.0;
+                                                        b = invCol.Blue  / 255.0;
+
+                                                        DebugLog("MESH",
+                                                                "TryGetColorFromAssetWithPriority: " + ownerKind +
+                                                                "='" + ownerName +
+                                                                "', usando primer AssetValue COLOR Name='" +
+                                                                av.Name + "', DisplayName='" + av.DisplayName + "', RGB=(" +
+                                                                r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                                                g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                                                b.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                                                        return true;
+                                                }
+                                        }
+                                }
+                        }
+                }
+                catch
+                {
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: error buscando AssetValue COLOR en " +
+                                ownerKind + "='" + ownerName + "'.");
+                }
+
+                DebugLog("MESH",
+                        "TryGetColorFromAssetWithPriority: sin color, usando gris 0.8 para " +
+                        ownerKind + "='" + ownerName + "'.");
+                return false;
         }
 
         // =====================================================
         //  COLOR (Body y Face) + Fallback a Occurrence.Appearance
         //
         //  Prioridad final:
-        //    1) Face.Appearance (wallpaint → generic_diffuse → primer COLOR)
-        //    2) Body.Appearance (wallpaint → generic_diffuse → primer COLOR)
-        //    3) Occurrence.Appearance (wallpaint → generic_diffuse → primer COLOR)
+        //    1) Face.Appearance (usa la prioridad de Asset: plasticvinyl → wallpaint → common_Tint → generic_diffuse → primer COLOR)
+        //    2) Body.Appearance (misma prioridad interna)
+        //    3) Occurrence.Appearance (misma prioridad interna)
         //    4) Gris (0.8, 0.8, 0.8)
         // =====================================================
 
         // Versión extendida con contexto de Occurrence
         private static bool TryGetBodyColor(
-            SurfaceBody body,
-            string ownerNameForLog,
-            Asset occAppearance,
-            out double r,
-            out double g,
-            out double b)
+                SurfaceBody body,
+                string ownerNameForLog,
+                Asset occAppearance,
+                out double r,
+                out double g,
+                out double b)
         {
-            r = 0.8;
-            g = 0.8;
-            b = 0.8;
+                r = 0.8;
+                g = 0.8;
+                b = 0.8;
 
-            if (body == null)
-            {
-                DebugLog("MESH", "TryGetBodyColor: body == null, usando gris 0.8.");
-                return false;
-            }
+                if (body == null)
+                {
+                        DebugLog("MESH", "TryGetBodyColor: body == null, usando gris 0.8.");
+                        return false;
+                }
 
-            string bodyName = "(sin nombre)";
-            try
-            {
-                if (!string.IsNullOrEmpty(body.Name))
-                    bodyName = body.Name;
-            }
-            catch { }
-
-            if (string.IsNullOrEmpty(ownerNameForLog))
-                ownerNameForLog = bodyName;
-
-            // 1) Body.Appearance
-            try
-            {
-                Asset appBody = null;
+                string bodyName = "(sin nombre)";
                 try
                 {
-                    appBody = body.Appearance;
+                        if (!string.IsNullOrEmpty(body.Name))
+                                bodyName = body.Name;
+                }
+                catch { }
+
+                if (string.IsNullOrEmpty(ownerNameForLog))
+                        ownerNameForLog = bodyName;
+
+                // 1) Body.Appearance
+                try
+                {
+                        Asset appBody = null;
+                        try
+                        {
+                                appBody = body.Appearance;
+                        }
+                        catch
+                        {
+                                appBody = null;
+                        }
+
+                        if (appBody != null &&
+                                TryGetColorFromAssetWithPriority(appBody, "Body", ownerNameForLog, out r, out g, out b))
+                        {
+                                return true;
+                        }
                 }
                 catch
                 {
-                    appBody = null;
+                        DebugLog("MESH",
+                                "TryGetBodyColor: excepción leyendo Body.Appearance, se probará Occurrence.");
                 }
 
-                if (appBody != null &&
-                    TryGetColorFromAssetWithPriority(appBody, "Body", ownerNameForLog, out r, out g, out b))
+                // 2) Fallback: Occurrence.Appearance, si nos la pasan
+                if (occAppearance != null)
                 {
-                    return true;
+                        if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
+                        {
+                                DebugLog("MESH",
+                                        "TryGetBodyColor: usando Occurrence.Appearance para body '" +
+                                        ownerNameForLog + "'.");
+                                return true;
+                        }
                 }
-            }
-            catch
-            {
+
                 DebugLog("MESH",
-                    "TryGetBodyColor: excepción leyendo Body.Appearance, se probará Occurrence.");
-            }
-
-            // 2) Fallback: Occurrence.Appearance, si nos la pasan
-            if (occAppearance != null)
-            {
-                if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
-                {
-                    DebugLog("MESH",
-                        "TryGetBodyColor: usando Occurrence.Appearance para body '" +
+                        "TryGetBodyColor: sin color detectado, usando gris 0.8 para body '" +
                         ownerNameForLog + "'.");
-                    return true;
-                }
-            }
-
-            DebugLog("MESH",
-                "TryGetBodyColor: sin color detectado, usando gris 0.8 para body '" +
-                ownerNameForLog + "'.");
-            return false;
+                return false;
         }
 
         // Wrapper antiguo (sin Occurrence) para compatibilidad
         private static bool TryGetBodyColor(
-            SurfaceBody body,
-            out double r,
-            out double g,
-            out double b)
+                SurfaceBody body,
+                out double r,
+                out double g,
+                out double b)
         {
-            return TryGetBodyColor(body,
-                (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
-                null,
-                out r, out g, out b);
+                return TryGetBodyColor(body,
+                        (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
+                        null,
+                        out r, out g, out b);
         }
 
         // Color a nivel de CARA con fallback a Body y Occurrence
         private static bool TryGetFaceColor(
-            Inventor.Face face,
-            SurfaceBody parentBody,
-            string ownerNameForLog,
-            Asset occAppearance,
-            out double r,
-            out double g,
-            out double b)
+                Inventor.Face face,
+                SurfaceBody parentBody,
+                string ownerNameForLog,
+                Asset occAppearance,
+                out double r,
+                out double g,
+                out double b)
         {
-            // Por defecto gris claro
-            r = 0.8;
-            g = 0.8;
-            b = 0.8;
+                // Por defecto gris claro
+                r = 0.8;
+                g = 0.8;
+                b = 0.8;
 
-            if (string.IsNullOrEmpty(ownerNameForLog))
-                ownerNameForLog = "(Face)";
+                if (string.IsNullOrEmpty(ownerNameForLog))
+                        ownerNameForLog = "(Face)";
 
-            // 1) Si hay cara, intentar Face.Appearance
-            if (face != null)
-            {
-                try
+                // 1) Si hay cara, intentar Face.Appearance
+                if (face != null)
                 {
-                    Asset app = null;
-                    try
-                    {
-                        app = face.Appearance;
-                    }
-                    catch
-                    {
-                        app = null;
-                    }
-
-                    if (app != null)
-                    {
-                        string faceId = ownerNameForLog;
                         try
                         {
-                            if (face.SurfaceBody != null && !string.IsNullOrEmpty(face.SurfaceBody.Name))
-                                faceId = face.SurfaceBody.Name;
-                        }
-                        catch { }
+                                Asset app = null;
+                                try
+                                {
+                                        app = face.Appearance;
+                                }
+                                catch
+                                {
+                                        app = null;
+                                }
 
-                        if (TryGetColorFromAssetWithPriority(app, "Face", faceId, out r, out g, out b))
+                                if (app != null)
+                                {
+                                        string faceId = ownerNameForLog;
+                                        try
+                                        {
+                                                if (face.SurfaceBody != null && !string.IsNullOrEmpty(face.SurfaceBody.Name))
+                                                        faceId = face.SurfaceBody.Name;
+                                        }
+                                        catch { }
+
+                                        if (TryGetColorFromAssetWithPriority(app, "Face", faceId, out r, out g, out b))
+                                        {
+                                                DebugLog("MESH",
+                                                        "TryGetFaceColor: usando Face.Appearance para '" + faceId + "'.");
+                                                return true;
+                                        }
+                                }
+                        }
+                        catch
                         {
-                            DebugLog("MESH",
-                                "TryGetFaceColor: usando Face.Appearance para '" + faceId + "'.");
-                            return true;
+                                DebugLog("MESH",
+                                        "TryGetFaceColor: excepción leyendo Face.Appearance, se probará Body/Occurrence.");
                         }
-                    }
                 }
-                catch
+                else
                 {
-                    DebugLog("MESH",
-                        "TryGetFaceColor: excepción leyendo Face.Appearance, se probará Body/Occurrence.");
+                        DebugLog("MESH", "TryGetFaceColor: face == null, se pasa directamente a Body/Occurrence.");
                 }
-            }
-            else
-            {
-                DebugLog("MESH", "TryGetFaceColor: face == null, se pasa directamente a Body/Occurrence.");
-            }
 
-            // 2) Fallback: Body (que internamente ya prueba Body.Appearance y luego Occurrence.Appearance)
-            if (parentBody != null)
-            {
-                if (TryGetBodyColor(parentBody, ownerNameForLog, occAppearance, out r, out g, out b))
+                // 2) Fallback: Body (que internamente ya prueba Body.Appearance y luego Occurrence.Appearance)
+                if (parentBody != null)
                 {
-                    DebugLog("MESH",
-                        "TryGetFaceColor: usando color de Body/Occurrence para '" +
+                        if (TryGetBodyColor(parentBody, ownerNameForLog, occAppearance, out r, out g, out b))
+                        {
+                                DebugLog("MESH",
+                                        "TryGetFaceColor: usando color de Body/Occurrence para '" +
+                                        ownerNameForLog + "'.");
+                                return true;
+                        }
+                }
+                else
+                {
+                        // 3) Si no hay body pero sí Occurrence, usar Occurrence directamente
+                        if (occAppearance != null)
+                        {
+                                if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
+                                {
+                                        DebugLog("MESH",
+                                                "TryGetFaceColor: usando Occurrence.Appearance sin body para '" +
+                                                ownerNameForLog + "'.");
+                                        return true;
+                                }
+                        }
+                }
+
+                DebugLog("MESH",
+                        "TryGetFaceColor: sin color específico, usando gris 0.8 para '" +
                         ownerNameForLog + "'.");
-                    return true;
-                }
-            }
-            else
-            {
-                // 3) Si no hay body pero sí Occurrence, usar Occurrence directamente
-                if (occAppearance != null)
-                {
-                    if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
-                    {
-                        DebugLog("MESH",
-                            "TryGetFaceColor: usando Occurrence.Appearance sin body para '" +
-                            ownerNameForLog + "'.");
-                        return true;
-                    }
-                }
-            }
-
-            DebugLog("MESH",
-                "TryGetFaceColor: sin color específico, usando gris 0.8 para '" +
-                ownerNameForLog + "'.");
-            return false;
+                return false;
         }
 
         // Wrapper antiguo (sin Occurrence) para compatibilidad
         private static bool TryGetFaceColor(
-            Inventor.Face face,
-            SurfaceBody parentBody,
-            out double r,
-            out double g,
-            out double b)
+                Inventor.Face face,
+                SurfaceBody parentBody,
+                out double r,
+                out double g,
+                out double b)
         {
-            return TryGetFaceColor(
-                face,
-                parentBody,
-                (parentBody != null && !string.IsNullOrEmpty(parentBody.Name)) ? parentBody.Name : "(body)",
-                null,
-                out r, out g, out b);
+                return TryGetFaceColor(
+                        face,
+                        parentBody,
+                        (parentBody != null && !string.IsNullOrEmpty(parentBody.Name)) ? parentBody.Name : "(body)",
+                        null,
+                        out r, out g, out b);
         }
 
         private static int ClampToByte(double v)
         {
-            if (v < 0.0)   return 0;
-            if (v > 255.0) return 255;
-            return (int)Math.Round(v);
+                if (v < 0.0)   return 0;
+                if (v > 255.0) return 255;
+                return (int)Math.Round(v);
         }
 
         private static void WriteSolidColorPng(
-            string path,
-            double r,
-            double g,
-            double b,
-            int size)
+                string path,
+                double r,
+                double g,
+                double b,
+                int size)
         {
-            DebugLog("MESH",
-                "WriteSolidColorPng: path='" + path +
-                "', color=(" +
-                r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                b.ToString("F3", CultureInfo.InvariantCulture) + "), size=" +
-                size.ToString(CultureInfo.InvariantCulture));
+                DebugLog("MESH",
+                        "WriteSolidColorPng: path='" + path +
+                        "', color=(" +
+                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                        b.ToString("F3", CultureInfo.InvariantCulture) + "), size=" +
+                        size.ToString(CultureInfo.InvariantCulture));
 
-            using (Bitmap bmp = new Bitmap(size, size))
-            {
-                System.Drawing.Color col = System.Drawing.Color.FromArgb(
-                    255,
-                    ClampToByte(r * 255.0),
-                    ClampToByte(g * 255.0),
-                    ClampToByte(b * 255.0));
-
-                for (int y = 0; y < size; y++)
+                using (Bitmap bmp = new Bitmap(size, size))
                 {
-                    for (int x = 0; x < size; x++)
-                    {
-                        bmp.SetPixel(x, y, col);
-                    }
-                }
+                        System.Drawing.Color col = System.Drawing.Color.FromArgb(
+                                255,
+                                ClampToByte(r * 255.0),
+                                ClampToByte(g * 255.0),
+                                ClampToByte(b * 255.0));
 
-                bmp.Save(path, ImageFormat.Png);
-            }
+                        for (int y = 0; y < size; y++)
+                        {
+                                for (int x = 0; x < size; x++)
+                                {
+                                        bmp.SetPixel(x, y, col);
+                                }
+                        }
+
+                        bmp.Save(path, ImageFormat.Png);
+                }
         }
 
         private static void WriteAtlasSingleColorPng(
-            string path,
-            double r,
-            double g,
-            double b,
-            int cellsX,
-            int cellsY,
-            int cellSize)
+                string path,
+                double r,
+                double g,
+                double b,
+                int cellsX,
+                int cellsY,
+                int cellSize)
         {
-            int width  = cellsX * cellSize;
-            int height = cellsY * cellSize;
+                int width  = cellsX * cellSize;
+                int height = cellsY * cellSize;
 
-            DebugLog("MESH",
-                "WriteAtlasSingleColorPng: path='" + path +
-                "', color=(" +
-                r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                b.ToString("F3", CultureInfo.InvariantCulture) + "), cellsX=" +
-                cellsX.ToString(CultureInfo.InvariantCulture) + ", cellsY=" +
-                cellsY.ToString(CultureInfo.InvariantCulture) + ", cellSize=" +
-                cellSize.ToString(CultureInfo.InvariantCulture));
+                DebugLog("MESH",
+                        "WriteAtlasSingleColorPng: path='" + path +
+                        "', color=(" +
+                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                        b.ToString("F3", CultureInfo.InvariantCulture) + "), cellsX=" +
+                        cellsX.ToString(CultureInfo.InvariantCulture) + ", cellsY=" +
+                        cellsY.ToString(CultureInfo.InvariantCulture) + ", cellSize=" +
+                        cellSize.ToString(CultureInfo.InvariantCulture));
 
-            using (Bitmap bmp = new Bitmap(width, height))
-            {
-                System.Drawing.Color col = System.Drawing.Color.FromArgb(
-                    255,
-                    ClampToByte(r * 255.0),
-                    ClampToByte(g * 255.0),
-                    ClampToByte(b * 255.0));
-
-                for (int y = 0; y < height; y++)
+                using (Bitmap bmp = new Bitmap(width, height))
                 {
-                    for (int x = 0; x < width; x++)
-                    {
-                        bmp.SetPixel(x, y, col);
-                    }
-                }
+                        System.Drawing.Color col = System.Drawing.Color.FromArgb(
+                                255,
+                                ClampToByte(r * 255.0),
+                                ClampToByte(g * 255.0),
+                                ClampToByte(b * 255.0));
 
-                bmp.Save(path, ImageFormat.Png);
-            }
+                        for (int y = 0; y < height; y++)
+                        {
+                                for (int x = 0; x < width; x++)
+                                {
+                                        bmp.SetPixel(x, y, col);
+                                }
+                        }
+
+                        bmp.Save(path, ImageFormat.Png);
+                }
         }
 
         // Core del atlas con soporte para Occurrence.Appearance
         private static void WriteBodyFaceColorAtlasCore(
-            SurfaceBody body,
-            string ownerNameForLog,
-            Asset occAppearance,
-            string path,
-            int cellSize)
+                SurfaceBody body,
+                string ownerNameForLog,
+                Asset occAppearance,
+                string path,
+                int cellSize)
         {
-            if (body == null)
-            {
-                DebugLog("MESH",
-                    "WriteBodyFaceColorAtlasCore: body == null, escribiendo PNG gris sólido.");
-                WriteSolidColorPng(path, 0.8, 0.8, 0.8, cellSize);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(ownerNameForLog))
-                ownerNameForLog = body.Name ?? "(body)";
-
-            double bodyR, bodyG, bodyB;
-            if (!TryGetBodyColor(body, ownerNameForLog, occAppearance, out bodyR, out bodyG, out bodyB))
-            {
-                bodyR = bodyG = bodyB = 0.8;
-            }
-
-            Faces faces = null;
-            try
-            {
-                faces = body.Faces;
-            }
-            catch
-            {
-                faces = null;
-            }
-
-            int faceCount = (faces != null) ? faces.Count : 0;
-
-            DebugLog("MESH",
-                "WriteBodyFaceColorAtlasCore: path='" + path +
-                "', faceCount=" + faceCount.ToString(CultureInfo.InvariantCulture) +
-                ", owner='" + ownerNameForLog + "'");
-
-            if (faceCount <= 0)
-            {
-                DebugLog("MESH",
-                    "WriteBodyFaceColorAtlasCore: faceCount <= 0, usando atlas monocromático.");
-                WriteAtlasSingleColorPng(path, bodyR, bodyG, bodyB, 1, 1, cellSize);
-                return;
-            }
-
-            int cellsX = (int)Math.Ceiling(Math.Sqrt((double)faceCount));
-            if (cellsX < 1) cellsX = 1;
-            int cellsY = (int)Math.Ceiling((double)faceCount / (double)cellsX);
-            if (cellsY < 1) cellsY = 1;
-
-            int width  = cellsX * cellSize;
-            int height = cellsY * cellSize;
-
-            DebugLog("MESH",
-                "WriteBodyFaceColorAtlasCore: cellsX=" +
-                cellsX.ToString(CultureInfo.InvariantCulture) +
-                ", cellsY=" +
-                cellsY.ToString(CultureInfo.InvariantCulture) +
-                ", cellSize=" +
-                cellSize.ToString(CultureInfo.InvariantCulture) +
-                ", width=" +
-                width.ToString(CultureInfo.InvariantCulture) +
-                ", height=" +
-                height.ToString(CultureInfo.InvariantCulture));
-
-            using (Bitmap bmp = new Bitmap(width, height))
-            {
-                using (Graphics g = Graphics.FromImage(bmp))
+                if (body == null)
                 {
-                    System.Drawing.Color bgCol = System.Drawing.Color.FromArgb(
-                        255,
-                        ClampToByte(bodyR * 255.0),
-                        ClampToByte(bodyG * 255.0),
-                        ClampToByte(bodyB * 255.0));
-                    g.Clear(bgCol);
+                        DebugLog("MESH",
+                                "WriteBodyFaceColorAtlasCore: body == null, escribiendo PNG gris sólido.");
+                        WriteSolidColorPng(path, 0.8, 0.8, 0.8, cellSize);
+                        return;
                 }
 
-                for (int fi = 0; fi < faceCount; fi++)
+                if (string.IsNullOrEmpty(ownerNameForLog))
+                        ownerNameForLog = body.Name ?? "(body)";
+
+                double bodyR, bodyG, bodyB;
+                if (!TryGetBodyColor(body, ownerNameForLog, occAppearance, out bodyR, out bodyG, out bodyB))
                 {
-                    Inventor.Face f = null;
-                    try
-                    {
-                        f = faces[fi + 1]; // Faces es 1-based
-                    }
-                    catch
-                    {
-                        f = null;
-                    }
+                        bodyR = bodyG = bodyB = 0.8;
+                }
 
-                    double fr, fg, fb;
-                    if (!TryGetFaceColor(f, body, ownerNameForLog, occAppearance, out fr, out fg, out fb))
-                    {
-                        fr = bodyR;
-                        fg = bodyG;
-                        fb = bodyB;
-                    }
+                Faces faces = null;
+                try
+                {
+                        faces = body.Faces;
+                }
+                catch
+                {
+                        faces = null;
+                }
 
-                    System.Drawing.Color faceCol = System.Drawing.Color.FromArgb(
-                        255,
-                        ClampToByte(fr * 255.0),
-                        ClampToByte(fg * 255.0),
-                        ClampToByte(fb * 255.0));
+                int faceCount = (faces != null) ? faces.Count : 0;
 
-                    int cellX = fi % cellsX;
-                    int cellY = fi / cellsX;
+                DebugLog("MESH",
+                        "WriteBodyFaceColorAtlasCore: path='" + path +
+                        "', faceCount=" + faceCount.ToString(CultureInfo.InvariantCulture) +
+                        ", owner='" + ownerNameForLog + "'");
 
-                    int startX = cellX * cellSize;
-                    int startY = cellY * cellSize;
+                if (faceCount <= 0)
+                {
+                        DebugLog("MESH",
+                                "WriteBodyFaceColorAtlasCore: faceCount <= 0, usando atlas monocromático.");
+                        WriteAtlasSingleColorPng(path, bodyR, bodyG, bodyB, 1, 1, cellSize);
+                        return;
+                }
 
-                    DebugLog("MESH",
-                        "WriteBodyFaceColorAtlasCore: faceIndex=" +
-                        fi.ToString(CultureInfo.InvariantCulture) +
-                        ", cell=(" +
-                        cellX.ToString(CultureInfo.InvariantCulture) + "," +
-                        cellY.ToString(CultureInfo.InvariantCulture) + "), color=(" +
-                        fr.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        fg.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        fb.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                int cellsX = (int)Math.Ceiling(Math.Sqrt((double)faceCount));
+                if (cellsX < 1) cellsX = 1;
+                int cellsY = (int)Math.Ceiling((double)faceCount / (double)cellsX);
+                if (cellsY < 1) cellsY = 1;
 
-                    for (int y = startY; y < startY + cellSize && y < height; y++)
-                    {
-                        for (int x = startX; x < startX + cellSize && x < width; x++)
+                int width  = cellsX * cellSize;
+                int height = cellsY * cellSize;
+
+                DebugLog("MESH",
+                        "WriteBodyFaceColorAtlasCore: cellsX=" +
+                        cellsX.ToString(CultureInfo.InvariantCulture) +
+                        ", cellsY=" +
+                        cellsY.ToString(CultureInfo.InvariantCulture) +
+                        ", cellSize=" +
+                        cellSize.ToString(CultureInfo.InvariantCulture) +
+                        ", width=" +
+                        width.ToString(CultureInfo.InvariantCulture) +
+                        ", height=" +
+                        height.ToString(CultureInfo.InvariantCulture));
+
+                using (Bitmap bmp = new Bitmap(width, height))
+                {
+                        using (Graphics g = Graphics.FromImage(bmp))
                         {
-                            bmp.SetPixel(x, y, faceCol);
+                                System.Drawing.Color bgCol = System.Drawing.Color.FromArgb(
+                                        255,
+                                        ClampToByte(bodyR * 255.0),
+                                        ClampToByte(bodyG * 255.0),
+                                        ClampToByte(bodyB * 255.0));
+                                g.Clear(bgCol);
                         }
-                    }
+
+                        for (int fi = 0; fi < faceCount; fi++)
+                        {
+                                Inventor.Face f = null;
+                                try
+                                {
+                                        f = faces[fi + 1]; // Faces es 1-based
+                                }
+                                catch
+                                {
+                                        f = null;
+                                }
+
+                                double fr, fg, fb;
+                                if (!TryGetFaceColor(f, body, ownerNameForLog, occAppearance, out fr, out fg, out fb))
+                                {
+                                        fr = bodyR;
+                                        fg = bodyG;
+                                        fb = bodyB;
+                                }
+
+                                System.Drawing.Color faceCol = System.Drawing.Color.FromArgb(
+                                        255,
+                                        ClampToByte(fr * 255.0),
+                                        ClampToByte(fg * 255.0),
+                                        ClampToByte(fb * 255.0));
+
+                                int cellX = fi % cellsX;
+                                int cellY = fi / cellsX;
+
+                                int startX = cellX * cellSize;
+                                int startY = cellY * cellSize;
+
+                                DebugLog("MESH",
+                                        "WriteBodyFaceColorAtlasCore: faceIndex=" +
+                                        fi.ToString(CultureInfo.InvariantCulture) +
+                                        ", cell=(" +
+                                        cellX.ToString(CultureInfo.InvariantCulture) + "," +
+                                        cellY.ToString(CultureInfo.InvariantCulture) + "), color=(" +
+                                        fr.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                        fg.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                        fb.ToString("F3", CultureInfo.InvariantCulture) + ")");
+
+                                for (int y = startY; y < startY + cellSize && y < height; y++)
+                                {
+                                        for (int x = startX; x < startX + cellSize && x < width; x++)
+                                        {
+                                                bmp.SetPixel(x, y, faceCol);
+                                        }
+                                }
+                        }
+
+                        bmp.Save(path, ImageFormat.Png);
                 }
 
-                bmp.Save(path, ImageFormat.Png);
-            }
-
-            DebugLog(
-                "MESH",
-                "WriteBodyFaceColorAtlasCore: atlas escrito OK en '" + path + "'");
+                DebugLog(
+                        "MESH",
+                        "WriteBodyFaceColorAtlasCore: atlas escrito OK en '" + path + "'");
         }
 
         // Wrapper antiguo (sin Occurrence) → Part .ipt
         private static void WriteBodyFaceColorAtlas(
-            SurfaceBody body,
-            string path,
-            int cellSize)
+                SurfaceBody body,
+                string path,
+                int cellSize)
         {
-            WriteBodyFaceColorAtlasCore(
-                body,
-                (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
-                null,
-                path,
-                cellSize);
+                WriteBodyFaceColorAtlasCore(
+                        body,
+                        (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
+                        null,
+                        path,
+                        cellSize);
         }
 
         // Wrapper nuevo con Occurrence.Appearance → Assembly .iam
         private static void WriteBodyFaceColorAtlas(
-            SurfaceBody body,
-            string ownerNameForLog,
-            Asset occAppearance,
-            string path,
-            int cellSize)
+                SurfaceBody body,
+                string ownerNameForLog,
+                Asset occAppearance,
+                string path,
+                int cellSize)
         {
-            WriteBodyFaceColorAtlasCore(
-                body,
-                ownerNameForLog,
-                occAppearance,
-                path,
-                cellSize);
+                WriteBodyFaceColorAtlasCore(
+                        body,
+                        ownerNameForLog,
+                        occAppearance,
+                        path,
+                        cellSize);
         }
 
 
@@ -2928,7 +2947,6 @@ namespace URDFConverterAddIn
     }
 
 } // fin namespace URDFConverterAddIn
-
 
 
 
