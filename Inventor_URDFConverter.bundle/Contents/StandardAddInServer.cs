@@ -14,7 +14,7 @@ using Inventor;
 
 namespace URDFConverterAddIn
 {
-    // GUID NUEVO: d507347f-7ff3-4dc0-a66d-5e596f9e9d89
+    // GUID NUEVO: 13c0f7be-eb12-48e9-963a-83e672efe557
     [Guid("13c0f7be-eb12-48e9-963a-83e672efe557")]
     [ComVisible(true)]
     public class StandardAddInServer : ApplicationAddInServer
@@ -65,11 +65,13 @@ namespace URDFConverterAddIn
                         "Export URDF (VLQ)",                 // DisplayName
                         "urdf_export_vlq_cmd",               // InternalName (único)
                         CommandTypesEnum.kNonShapeEditCmdType,
-                        AddInClientId,                       // 👉 ClientId = GUID del AddIn con llaves
+                        AddInClientId,                       // ClientId = GUID del AddIn con llaves
                         "Export URDF with VeryLowOptimized mesh",
                         "Export URDF (VLQ)");
                 }
 
+                // Evitar múltiples suscripciones si Inventor re-llama Activate en la misma sesión
+                try { _exportUrdfVlqButton.OnExecute -= new ButtonDefinitionSink_OnExecuteEventHandler(OnExportUrdfVlqButtonPressed); } catch { }
                 _exportUrdfVlqButton.OnExecute +=
                     new ButtonDefinitionSink_OnExecuteEventHandler(OnExportUrdfVlqButtonPressed);
 
@@ -92,15 +94,16 @@ namespace URDFConverterAddIn
                         "Export URDF (Display)",             // DisplayName
                         "urdf_export_display_cmd",           // InternalName (único)
                         CommandTypesEnum.kNonShapeEditCmdType,
-                        AddInClientId,                       // 👉 MISMO ClientId
+                        AddInClientId,                       // MISMO ClientId
                         "Export URDF with DisplayMesh-quality mesh",
                         "Export URDF (Display)");
                 }
 
-                Debug.WriteLine("[URDF][SYS] ButtonDefinitions creados/obtenidos correctamente.");
-
+                try { _exportUrdfDisplayButton.OnExecute -= new ButtonDefinitionSink_OnExecuteEventHandler(OnExportUrdfDisplayButtonPressed); } catch { }
                 _exportUrdfDisplayButton.OnExecute +=
                     new ButtonDefinitionSink_OnExecuteEventHandler(OnExportUrdfDisplayButtonPressed);
+
+                Debug.WriteLine("[URDF][SYS] ButtonDefinitions creados/obtenidos correctamente.");
 
                 // -------------------------------------------------
                 // 2) Añadir los botones a los Ribbons de Part y Assembly
@@ -130,14 +133,14 @@ namespace URDFConverterAddIn
                         urdfPanelPart = toolsTabPart.RibbonPanels.Add(
                             "URDF Export",
                             "urdf_export_panel_part",
-                            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                            AddInClientId,   // ✅ antes tenías "aaaaaaaa..." (mal). Debe ser tu ClientId real.
                             "",
                             false);
                     }
 
-                    // Añadimos los botones al panel
-                    urdfPanelPart.CommandControls.AddButton(_exportUrdfVlqButton);
-                    urdfPanelPart.CommandControls.AddButton(_exportUrdfDisplayButton);
+                    // Añadimos los botones al panel (sin duplicar)
+                    SafeAddButtonToPanel(urdfPanelPart, _exportUrdfVlqButton);
+                    SafeAddButtonToPanel(urdfPanelPart, _exportUrdfDisplayButton);
 
                     Debug.WriteLine("[URDF][UI] Panel URDF en Part creado/actualizado correctamente.");
                 }
@@ -167,13 +170,13 @@ namespace URDFConverterAddIn
                         urdfPanelAsm = toolsTabAsm.RibbonPanels.Add(
                             "URDF Export",
                             "urdf_export_panel_asm",
-                            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                            AddInClientId,   // ✅ antes tenías "bbbb..." (mal). Debe ser tu ClientId real.
                             "",
                             false);
                     }
 
-                    urdfPanelAsm.CommandControls.AddButton(_exportUrdfVlqButton);
-                    urdfPanelAsm.CommandControls.AddButton(_exportUrdfDisplayButton);
+                    SafeAddButtonToPanel(urdfPanelAsm, _exportUrdfVlqButton);
+                    SafeAddButtonToPanel(urdfPanelAsm, _exportUrdfDisplayButton);
 
                     Debug.WriteLine("[URDF][UI] Panel URDF en Assembly creado/actualizado correctamente.");
                 }
@@ -192,6 +195,46 @@ namespace URDFConverterAddIn
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
+        }
+
+        private static void SafeAddButtonToPanel(RibbonPanel panel, ButtonDefinition btn)
+        {
+            if (panel == null || btn == null) return;
+
+            try
+            {
+                // Evitar duplicados si Activate corre más de una vez
+                CommandControls ctrls = panel.CommandControls;
+                if (ctrls != null)
+                {
+                    for (int i = 1; i <= ctrls.Count; i++)
+                    {
+                        try
+                        {
+                            CommandControl cc = ctrls[i];
+                            if (cc == null) continue;
+                            if (cc.ControlDefinition == null) continue;
+
+                            string internalName = "";
+                            try { internalName = cc.ControlDefinition.InternalName; } catch { internalName = ""; }
+
+                            if (!string.IsNullOrEmpty(internalName) &&
+                                string.Equals(internalName, btn.InternalName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return; // ya está
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                panel.CommandControls.AddButton(btn);
+            }
+            catch { }
         }
 
         // ----------------------------------------------------
@@ -240,24 +283,23 @@ namespace URDFConverterAddIn
             {
                 if (_exportUrdfVlqButton != null)
                 {
+                    try { _exportUrdfVlqButton.OnExecute -= new ButtonDefinitionSink_OnExecuteEventHandler(OnExportUrdfVlqButtonPressed); } catch { }
                     Marshal.FinalReleaseComObject(_exportUrdfVlqButton);
                     _exportUrdfVlqButton = null;
                 }
 
                 if (_exportUrdfDisplayButton != null)
                 {
+                    try { _exportUrdfDisplayButton.OnExecute -= new ButtonDefinitionSink_OnExecuteEventHandler(OnExportUrdfDisplayButtonPressed); } catch { }
                     Marshal.FinalReleaseComObject(_exportUrdfDisplayButton);
                     _exportUrdfDisplayButton = null;
                 }
             }
-            catch
-            {
-            }
+            catch { }
 
             if (_invApp != null)
             {
-                try { Marshal.ReleaseComObject(_invApp); }
-                catch { }
+                try { Marshal.ReleaseComObject(_invApp); } catch { }
                 _invApp = null;
             }
         }
@@ -1838,7 +1880,7 @@ namespace URDFConverterAddIn
                 return;
             }
 
-            // 🔧 Ajustar tipos de JOINT + AXIS (robusto)
+            // 🔧 Ajustar tipos de JOINT + AXIS + PARENT + ORIGIN (robusto)
             UpdateJointTypesFromConstraints(asmDoc, robot);
 
             AssemblyComponentDefinition asmDef = asmDoc.ComponentDefinition;
@@ -2063,12 +2105,55 @@ namespace URDFConverterAddIn
         }
 
         // -------------------------------------------------
+        //  Resolver occurrences de constraints a una leaf occurrence mapeada
+        //  (si el constraint apunta a un sub-assembly occurrence)
+        // -------------------------------------------------
+        private static ComponentOccurrence ResolveToMappedLeafOccurrence(
+            ComponentOccurrence occ,
+            Dictionary<ComponentOccurrence, string> occToBaseLink)
+        {
+            if (occ == null) return null;
+
+            if (occToBaseLink != null && occToBaseLink.ContainsKey(occ))
+                return occ;
+
+            try
+            {
+                // Inventor: SubOccurrences es ComponentOccurrencesEnumerator (NO ComponentOccurrences)
+                ComponentOccurrencesEnumerator subs = null;
+                try { subs = occ.SubOccurrences; } catch { subs = null; }
+
+                if (subs != null)
+                {
+                    foreach (ComponentOccurrence so in subs)
+                    {
+                        if (so == null) continue;
+
+                        if (occToBaseLink != null && occToBaseLink.ContainsKey(so))
+                            return so;
+
+                        // Profundizar (por si so no es leaf pero tiene descendientes leaf mapeados)
+                        ComponentOccurrence deep = ResolveToMappedLeafOccurrence(so, occToBaseLink);
+                        if (deep != null && occToBaseLink != null && occToBaseLink.ContainsKey(deep))
+                            return deep;
+                    }
+                }
+            }
+            catch { }
+
+            // No encontramos un leaf mapeado: devolvemos el mismo occ como fallback
+            return occ;
+        }
+
+
+        // -------------------------------------------------
         //  Mapear AssemblyConstraints → tipos de JOINT URDF (ROBUSTO)
         //
         //  ✅ No asume que child = OccurrenceOne.
         //  ✅ Detecta MateConstraint entre cilindros / workaxis / edge lineal → continuous.
         //  ✅ Extrae eje REAL desde GeometryOne/GeometryTwo (en espacio del assembly).
         //  ✅ Convierte axis(world) → axis(joint frame) usando la rotación de la occurrence del child.
+        //  ✅ AHORA TAMBIÉN: setea ParentLink real y Origin RELATIVO (parent→child) cuando se puede.
         // -------------------------------------------------
         private static void UpdateJointTypesFromConstraints(
             AssemblyDocument asmDoc,
@@ -2103,7 +2188,7 @@ namespace URDFConverterAddIn
             Dictionary<ComponentOccurrence, string> occToBaseLink =
                 new Dictionary<ComponentOccurrence, string>();
 
-            // También guardamos la Matrix por occurrence para convertir axis→frame local
+            // Guardamos Matrix por occurrence (para axis)
             Dictionary<ComponentOccurrence, Matrix> occToMatrix =
                 new Dictionary<ComponentOccurrence, Matrix>();
 
@@ -2188,9 +2273,13 @@ namespace URDFConverterAddIn
                     o2 = null;
                 }
 
+                // Resolver a leaf mapeada si venía un sub-assembly occurrence
+                ComponentOccurrence ro1 = ResolveToMappedLeafOccurrence(o1, occToBaseLink);
+                ComponentOccurrence ro2 = ResolveToMappedLeafOccurrence(o2, occToBaseLink);
+
                 string link1 = null, link2 = null;
-                if (o1 != null) occToBaseLink.TryGetValue(o1, out link1);
-                if (o2 != null) occToBaseLink.TryGetValue(o2, out link2);
+                if (ro1 != null) occToBaseLink.TryGetValue(ro1, out link1);
+                if (ro2 != null) occToBaseLink.TryGetValue(ro2, out link2);
 
                 // Si no tenemos ninguno (no-leaf / suprimido), no podemos mapear
                 if (string.IsNullOrEmpty(link1) && string.IsNullOrEmpty(link2))
@@ -2200,24 +2289,26 @@ namespace URDFConverterAddIn
                 ComponentOccurrence childOcc = null;
                 ComponentOccurrence parentOcc = null;
                 string childLink = null;
+                string parentLink = null;
 
                 bool g1 = false, g2 = false;
-                try { if (o1 != null) g1 = o1.Grounded; } catch { g1 = false; }
-                try { if (o2 != null) g2 = o2.Grounded; } catch { g2 = false; }
+                try { if (ro1 != null) g1 = ro1.Grounded; } catch { g1 = false; }
+                try { if (ro2 != null) g2 = ro2.Grounded; } catch { g2 = false; }
 
-                // Caso típico: uno grounded (parent) y el otro no (child)
                 if (!string.IsNullOrEmpty(link1) && !string.IsNullOrEmpty(link2))
                 {
                     if (g1 && !g2)
                     {
-                        parentOcc = o1;
-                        childOcc = o2;
+                        parentOcc = ro1;
+                        childOcc = ro2;
+                        parentLink = link1;
                         childLink = link2;
                     }
                     else if (g2 && !g1)
                     {
-                        parentOcc = o2;
-                        childOcc = o1;
+                        parentOcc = ro2;
+                        childOcc = ro1;
+                        parentLink = link2;
                         childLink = link1;
                     }
                     else
@@ -2232,12 +2323,11 @@ namespace URDFConverterAddIn
 
                         if (j2Fixed && !j1Fixed)
                         {
-                            childOcc = o2; parentOcc = o1; childLink = link2;
+                            parentOcc = ro1; childOcc = ro2; parentLink = link1; childLink = link2;
                         }
                         else
                         {
-                            // default: OccurrenceOne como child (solo si no hay mejor señal)
-                            childOcc = o1; parentOcc = o2; childLink = link1;
+                            parentOcc = ro2; childOcc = ro1; parentLink = link2; childLink = link1;
                         }
                     }
                 }
@@ -2246,11 +2336,11 @@ namespace URDFConverterAddIn
                     // Solo uno está en el mapa leaf:
                     if (!string.IsNullOrEmpty(link1))
                     {
-                        childOcc = o1; parentOcc = o2; childLink = link1;
+                        childOcc = ro1; parentOcc = ro2; childLink = link1; parentLink = link2;
                     }
                     else
                     {
-                        childOcc = o2; parentOcc = o1; childLink = link2;
+                        childOcc = ro2; parentOcc = ro1; childLink = link2; parentLink = link1;
                     }
                 }
 
@@ -2295,15 +2385,11 @@ namespace URDFConverterAddIn
                 else if (ac is MateConstraint)
                 {
                     // SOLO Mate “eje” (cilindro / workaxis / edge lineal) → DOF rotacional
-                    // Si no hay eje extraíble, lo dejamos como fixed.
-                    if (gotAxis)
-                        newType = "continuous";
-                    else
-                        newType = null;
+                    if (gotAxis) newType = "continuous";
+                    else newType = null;
                 }
                 else
                 {
-                    // Otros (Flush, Tangent, etc.) se dejan fixed
                     newType = null;
                 }
 
@@ -2311,6 +2397,43 @@ namespace URDFConverterAddIn
                     continue;
 
                 joint.Type = newType;
+
+                // ✅ Parent real si lo tenemos (si no, se queda como estaba)
+                if (!string.IsNullOrEmpty(parentLink))
+                {
+                    // Evitar autoloops
+                    if (!string.Equals(parentLink, joint.ChildLink, StringComparison.OrdinalIgnoreCase))
+                        joint.ParentLink = parentLink;
+                }
+
+                // ✅ Origin relativo parent→child (si tenemos matrices de ambos)
+                //    Esto es CLAVE para que al cambiar a continuous/revolute no “quede todo colgando de base_link”.
+                try
+                {
+                    Matrix parentM = null;
+                    Matrix childM = null;
+
+                    if (parentOcc != null) occToMatrix.TryGetValue(parentOcc, out parentM);
+                    if (childOcc != null) occToMatrix.TryGetValue(childOcc, out childM);
+
+                    double tx_m, ty_m, tz_m, r, p, y;
+                    if (TryComputeRelativeXYZRPY(parentM, childM, out tx_m, out ty_m, out tz_m, out r, out p, out y))
+                    {
+                        joint.OriginXYZ = new double[] { tx_m, ty_m, tz_m };
+                        joint.OriginRPY = new double[] { r, p, y };
+
+                        DebugLog("LINK",
+                            "Constraint '" + ac.Name + "' → joint '" + joint.Name +
+                            "' origin REL parent→child xyz(m)=(" +
+                            tx_m.ToString("G6", CultureInfo.InvariantCulture) + "," +
+                            ty_m.ToString("G6", CultureInfo.InvariantCulture) + "," +
+                            tz_m.ToString("G6", CultureInfo.InvariantCulture) + ") rpy(rad)=(" +
+                            r.ToString("G6", CultureInfo.InvariantCulture) + "," +
+                            p.ToString("G6", CultureInfo.InvariantCulture) + "," +
+                            y.ToString("G6", CultureInfo.InvariantCulture) + ")");
+                    }
+                }
+                catch { }
 
                 // Si el joint es DOF y tenemos axis, convertirlo al frame del joint (child occurrence)
                 bool isFixed = string.Equals(joint.Type, "fixed", StringComparison.OrdinalIgnoreCase);
@@ -2346,10 +2469,96 @@ namespace URDFConverterAddIn
         }
 
         // =====================================================
+        //  RELATIVE origin: parent→child (m) + RPY(rad)
+        //  Matrices de Inventor están en cm y son rígidas (rot+trasl).
+        // =====================================================
+        private static bool TryComputeRelativeXYZRPY(
+            Matrix parentM,
+            Matrix childM,
+            out double tx_m,
+            out double ty_m,
+            out double tz_m,
+            out double roll,
+            out double pitch,
+            out double yaw)
+        {
+            tx_m = ty_m = tz_m = 0.0;
+            roll = pitch = yaw = 0.0;
+
+            if (parentM == null || childM == null)
+                return false;
+
+            // Parent R (world)
+            double pr11 = parentM.Cell[1, 1];
+            double pr12 = parentM.Cell[1, 2];
+            double pr13 = parentM.Cell[1, 3];
+            double pr21 = parentM.Cell[2, 1];
+            double pr22 = parentM.Cell[2, 2];
+            double pr23 = parentM.Cell[2, 3];
+            double pr31 = parentM.Cell[3, 1];
+            double pr32 = parentM.Cell[3, 2];
+            double pr33 = parentM.Cell[3, 3];
+
+            // Child R (world)
+            double cr11 = childM.Cell[1, 1];
+            double cr12 = childM.Cell[1, 2];
+            double cr13 = childM.Cell[1, 3];
+            double cr21 = childM.Cell[2, 1];
+            double cr22 = childM.Cell[2, 2];
+            double cr23 = childM.Cell[2, 3];
+            double cr31 = childM.Cell[3, 1];
+            double cr32 = childM.Cell[3, 2];
+            double cr33 = childM.Cell[3, 3];
+
+            // R_rel = Rp^T * Rc
+            double r11 = pr11 * cr11 + pr21 * cr21 + pr31 * cr31;
+            double r12 = pr11 * cr12 + pr21 * cr22 + pr31 * cr32;
+            double r13 = pr11 * cr13 + pr21 * cr23 + pr31 * cr33;
+
+            double r21 = pr12 * cr11 + pr22 * cr21 + pr32 * cr31;
+            double r22 = pr12 * cr12 + pr22 * cr22 + pr32 * cr32;
+            double r23 = pr12 * cr13 + pr22 * cr23 + pr32 * cr33;
+
+            double r31 = pr13 * cr11 + pr23 * cr21 + pr33 * cr31;
+            double r32 = pr13 * cr12 + pr23 * cr22 + pr33 * cr32;
+            double r33 = pr13 * cr13 + pr23 * cr23 + pr33 * cr33;
+
+            // t_rel(cm) = Rp^T * (tc - tp)
+            double dtx_cm = childM.Cell[1, 4] - parentM.Cell[1, 4];
+            double dty_cm = childM.Cell[2, 4] - parentM.Cell[2, 4];
+            double dtz_cm = childM.Cell[3, 4] - parentM.Cell[3, 4];
+
+            double tx_cm = pr11 * dtx_cm + pr21 * dty_cm + pr31 * dtz_cm;
+            double ty_cm = pr12 * dtx_cm + pr22 * dty_cm + pr32 * dtz_cm;
+            double tz_cm = pr13 * dtx_cm + pr23 * dty_cm + pr33 * dtz_cm;
+
+            // cm → m
+            tx_m = tx_cm * 0.01;
+            ty_m = ty_cm * 0.01;
+            tz_m = tz_cm * 0.01;
+
+            // R → RPY (mismo esquema que MatrixToRPY)
+            double sy = Math.Sqrt(r11 * r11 + r21 * r21);
+            bool singular = sy < 1e-6;
+
+            if (!singular)
+            {
+                pitch = Math.Atan2(-r31, sy);
+                roll = Math.Atan2(r32, r33);
+                yaw = Math.Atan2(r21, r11);
+            }
+            else
+            {
+                pitch = Math.Atan2(-r31, sy);
+                roll = 0.0;
+                yaw = Math.Atan2(-r12, r22);
+            }
+
+            return true;
+        }
+
+        // =====================================================
         //  EXTRAER AXIS WORLD DESDE CONSTRAINT
-        //  - Prefiere GeometryOne/GeometryTwo (ya viene en espacio del assembly)
-        //  - Fallback a EntityOne/EntityTwo
-        //  - Soporta: Cylinder/Cone → AxisVector; WorkAxis/Line/LineSegment/Edge(lineal) → Direction
         // =====================================================
         private static bool TryExtractAxisWorldFromConstraint(
             AssemblyConstraint ac,
@@ -2398,25 +2607,19 @@ namespace URDFConverterAddIn
                 }
                 else
                 {
-                    // AssemblyConstraint base también tiene EntityOne/Two en muchos casos
                     try { e1 = ac.EntityOne; } catch { }
                     try { e2 = ac.EntityTwo; } catch { }
                     try { g1 = ac.GeometryOne; } catch { }
                     try { g2 = ac.GeometryTwo; } catch { }
                 }
             }
-            catch
-            {
-                // si algo falla, seguimos con lo que tengamos
-            }
+            catch { }
 
-            // 1) GeometryOne/Two
             if (TryGetAxisFromAnyObject(g1, out axisWorld, out axisSource))
                 return true;
             if (TryGetAxisFromAnyObject(g2, out axisWorld, out axisSource))
                 return true;
 
-            // 2) EntityOne/Two
             if (TryGetAxisFromAnyObject(e1, out axisWorld, out axisSource))
                 return true;
             if (TryGetAxisFromAnyObject(e2, out axisWorld, out axisSource))
@@ -2436,7 +2639,6 @@ namespace URDFConverterAddIn
 
             try
             {
-                // Geometrías directas (ya en espacio del assembly)
                 Cylinder cyl = obj as Cylinder;
                 if (cyl != null)
                 {
@@ -2473,7 +2675,6 @@ namespace URDFConverterAddIn
                     return axisWorld != null;
                 }
 
-                // WorkAxis → Line
                 WorkAxis wa = obj as WorkAxis;
                 if (wa != null)
                 {
@@ -2488,7 +2689,6 @@ namespace URDFConverterAddIn
                     }
                 }
 
-                // Edge lineal → Geometry (Line / LineSegment)
                 Edge ed = obj as Edge;
                 if (ed != null)
                 {
@@ -2504,7 +2704,6 @@ namespace URDFConverterAddIn
                     }
                 }
 
-                // Face cilíndrica → Geometry (Cylinder/Cone) (fallback)
                 Inventor.Face f = obj as Inventor.Face;
                 if (f != null)
                 {
@@ -2520,10 +2719,7 @@ namespace URDFConverterAddIn
                     }
                 }
             }
-            catch
-            {
-                // ignorar
-            }
+            catch { }
 
             return false;
         }
@@ -2540,7 +2736,6 @@ namespace URDFConverterAddIn
             double[] a = Normalize3(new double[] { axisWorld[0], axisWorld[1], axisWorld[2] });
             if (a == null) return null;
 
-            // si no hay matriz, devolvemos el world ya normalizado
             if (occMatrix == null)
                 return a;
 
@@ -2556,7 +2751,6 @@ namespace URDFConverterAddIn
             double r32 = occMatrix.Cell[3, 2];
             double r33 = occMatrix.Cell[3, 3];
 
-            // local = R^T * world  (mismo patrón que TransformVerticesToLocalFrame)
             double lx = r11 * a[0] + r21 * a[1] + r31 * a[2];
             double ly = r12 * a[0] + r22 * a[1] + r32 * a[2];
             double lz = r13 * a[0] + r23 * a[1] + r33 * a[2];
@@ -2574,8 +2768,8 @@ namespace URDFConverterAddIn
         }
 
         // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        //  (Continúa en BLOQUE 2/2: Collada, Inertial, URDF writer,
-        //   MatrixToRPY, clases RobotModel/UrdfLink/UrdfJoint, etc.)
+        //  Continúa en BLOQUE 2/2: Collada, Inertial, URDF writer,
+        //  MatrixToRPY, clases RobotModel/UrdfLink/UrdfJoint, etc.
         // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
@@ -2587,108 +2781,71 @@ namespace URDFConverterAddIn
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // -------------------------------------------------
-        //  COLLADA (DAE) con referencia a textura PNG
-        // -------------------------------------------------
+        // =====================================================
+        //  COLLADA (.dae) writer: geometría + UV + textura (PNG)
+        // =====================================================
         private static void WriteColladaFile(
-            string fullPath,
-            string geometryName,
-            double[] vertices,
-            int[] indices)
+            string daePath,
+            string meshId,
+            double[] vertices,   // xyz en metros
+            int[] indices)       // tri list, 0-based
         {
-            DebugLog("MESH",
-                "WriteColladaFile: fullPath='" + fullPath +
-                "', geometryName='" + geometryName +
-                "', numVerts=" + (vertices != null ? (vertices.Length / 3).ToString(CultureInfo.InvariantCulture) : "0") +
-                ", numTris=" + (indices != null ? (indices.Length / 3).ToString(CultureInfo.InvariantCulture) : "0"));
+            if (string.IsNullOrEmpty(daePath) || vertices == null || indices == null)
+                return;
 
-            string text = BuildColladaText(geometryName, vertices, indices);
-            IOFile.WriteAllText(fullPath, text);
-        }
+            int vCount = vertices.Length / 3;
+            int triCount = indices.Length / 3;
 
-        private static string BuildColladaText(
-            string geometryName,
-            double[] vertices,
-            int[] indices)
-        {
-            if (vertices == null) vertices = new double[0];
-            if (indices == null) indices = new int[0];
+            // Normales por vértice (aprox) y UV planar (bbox XY)
+            double[] normals = BuildVertexNormals(vertices, indices);
+            double[] uvs = BuildPlanarUV(vertices);
 
-            StringBuilder sb = new StringBuilder();
+            // Textura: asumimos <meshId>.png en la misma carpeta que el .dae
+            string pngFileName = meshId + ".png";
 
-            string geomId = geometryName + "-geom";
-            string positionsId = geometryName + "-positions";
-            string positionsArrayId = positionsId + "-array";
-            string verticesId = geometryName + "-verts";
+            string geomId = meshId + "-geom";
+            string posId = geomId + "-positions";
+            string norId = geomId + "-normals";
+            string uvId  = geomId + "-uvs";
+            string vtxId = geomId + "-vertices";
 
-            string imageId = geometryName + "-image";
-            string effectId = geometryName + "-effect";
-            string materialId = geometryName + "-material";
-            string surfaceSid = geometryName + "-surface";
-            string samplerSid = geometryName + "-sampler";
+            string imgId = meshId + "-img";
+            string effId = meshId + "-effect";
+            string matId = meshId + "-material";
 
-            string textureFileName = geometryName + ".png";
+            StringBuilder sb = new StringBuilder(1024 * 64);
 
-            sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             sb.AppendLine("<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" version=\"1.4.1\">");
             sb.AppendLine("  <asset>");
-            sb.AppendLine("    <contributor>");
-            sb.AppendLine("      <authoring_tool>URDFConverterAddIn</authoring_tool>");
-            sb.AppendLine("    </contributor>");
+            sb.AppendLine("    <contributor><authoring_tool>URDFConverterAddIn</authoring_tool></contributor>");
             sb.AppendLine("    <unit name=\"meter\" meter=\"1\"/>");
             sb.AppendLine("    <up_axis>Z_UP</up_axis>");
             sb.AppendLine("  </asset>");
 
-            // IMAGEN (para que figure el path de textura en el DAE)
+            // Images
             sb.AppendLine("  <library_images>");
-            sb.AppendLine("    <image id=\"" + imageId + "\" name=\"" + imageId + "\">");
-            sb.AppendLine("      <init_from>" + textureFileName + "</init_from>");
+            sb.AppendLine("    <image id=\"" + XmlEscape(imgId) + "\" name=\"" + XmlEscape(imgId) + "\">");
+            sb.AppendLine("      <init_from>" + XmlEscape(pngFileName) + "</init_from>");
             sb.AppendLine("    </image>");
             sb.AppendLine("  </library_images>");
 
-            // EFFECT (usa la imagen como textura difusa)
+            // Effects (lambert + texture)
             sb.AppendLine("  <library_effects>");
-            sb.AppendLine("    <effect id=\"" + effectId + "\">");
+            sb.AppendLine("    <effect id=\"" + XmlEscape(effId) + "\">");
             sb.AppendLine("      <profile_COMMON>");
-            sb.AppendLine("        <newparam sid=\"" + surfaceSid + "\">");
+            sb.AppendLine("        <newparam sid=\"surface\">");
             sb.AppendLine("          <surface type=\"2D\">");
-            sb.AppendLine("            <init_from>" + imageId + "</init_from>");
+            sb.AppendLine("            <init_from>" + XmlEscape(imgId) + "</init_from>");
             sb.AppendLine("          </surface>");
             sb.AppendLine("        </newparam>");
-            sb.AppendLine("        <newparam sid=\"" + samplerSid + "\">");
-            sb.AppendLine("          <sampler2D>");
-            sb.AppendLine("            <source>" + surfaceSid + "</source>");
-            sb.AppendLine("          </sampler2D>");
+            sb.AppendLine("        <newparam sid=\"sampler\">");
+            sb.AppendLine("          <sampler2D><source>surface</source></sampler2D>");
             sb.AppendLine("        </newparam>");
             sb.AppendLine("        <technique sid=\"common\">");
             sb.AppendLine("          <lambert>");
             sb.AppendLine("            <diffuse>");
-            sb.AppendLine("              <texture texture=\"" + samplerSid + "\" texcoord=\"TEX0\"/>");
+            sb.AppendLine("              <texture texture=\"sampler\" texcoord=\"UVSET0\"/>");
             sb.AppendLine("            </diffuse>");
             sb.AppendLine("          </lambert>");
             sb.AppendLine("        </technique>");
@@ -2696,35 +2853,32 @@ namespace URDFConverterAddIn
             sb.AppendLine("    </effect>");
             sb.AppendLine("  </library_effects>");
 
-            // MATERIAL
+            // Materials
             sb.AppendLine("  <library_materials>");
-            sb.AppendLine("    <material id=\"" + materialId + "\" name=\"" + materialId + "\">");
-            sb.AppendLine("      <instance_effect url=\"#" + effectId + "\"/>");
+            sb.AppendLine("    <material id=\"" + XmlEscape(matId) + "\" name=\"" + XmlEscape(matId) + "\">");
+            sb.AppendLine("      <instance_effect url=\"#" + XmlEscape(effId) + "\"/>");
             sb.AppendLine("    </material>");
             sb.AppendLine("  </library_materials>");
 
-            // GEOMETRÍA
+            // Geometries
             sb.AppendLine("  <library_geometries>");
-            sb.AppendLine("    <geometry id=\"" + geomId + "\" name=\"" + geometryName + "\">");
+            sb.AppendLine("    <geometry id=\"" + XmlEscape(geomId) + "\" name=\"" + XmlEscape(meshId) + "\">");
             sb.AppendLine("      <mesh>");
 
             // Positions
-            sb.AppendLine("        <source id=\"" + positionsId + "\">");
-            sb.Append("          <float_array id=\"")
-              .Append(positionsArrayId)
-              .Append("\" count=\"")
-              .Append(vertices.Length.ToString(CultureInfo.InvariantCulture))
-              .Append("\">");
-
-            for (int i = 0; i < vertices.Length; i++)
+            sb.AppendLine("        <source id=\"" + XmlEscape(posId) + "\">");
+            sb.AppendLine("          <float_array id=\"" + XmlEscape(posId) + "-array\" count=\"" + (vCount * 3).ToString(CultureInfo.InvariantCulture) + "\">");
+            for (int i = 0; i < vCount; i++)
             {
-                sb.Append(FloatToString(vertices[i]));
-                if (i + 1 < vertices.Length)
-                    sb.Append(" ");
+                int k = i * 3;
+                sb.Append(FormatF(vertices[k])).Append(" ")
+                  .Append(FormatF(vertices[k + 1])).Append(" ")
+                  .Append(FormatF(vertices[k + 2])).Append(i == vCount - 1 ? "" : " ");
             }
-            sb.AppendLine("</float_array>");
+            sb.AppendLine();
+            sb.AppendLine("          </float_array>");
             sb.AppendLine("          <technique_common>");
-            sb.AppendLine("            <accessor source=\"#" + positionsArrayId + "\" count=\"" + (vertices.Length / 3).ToString(CultureInfo.InvariantCulture) + "\" stride=\"3\">");
+            sb.AppendLine("            <accessor source=\"#" + XmlEscape(posId) + "-array\" count=\"" + vCount.ToString(CultureInfo.InvariantCulture) + "\" stride=\"3\">");
             sb.AppendLine("              <param name=\"X\" type=\"float\"/>");
             sb.AppendLine("              <param name=\"Y\" type=\"float\"/>");
             sb.AppendLine("              <param name=\"Z\" type=\"float\"/>");
@@ -2732,19 +2886,77 @@ namespace URDFConverterAddIn
             sb.AppendLine("          </technique_common>");
             sb.AppendLine("        </source>");
 
-            sb.AppendLine("        <vertices id=\"" + verticesId + "\">");
-            sb.AppendLine("          <input semantic=\"POSITION\" source=\"#" + positionsId + "\"/>");
+            // Normals
+            sb.AppendLine("        <source id=\"" + XmlEscape(norId) + "\">");
+            sb.AppendLine("          <float_array id=\"" + XmlEscape(norId) + "-array\" count=\"" + (vCount * 3).ToString(CultureInfo.InvariantCulture) + "\">");
+            for (int i = 0; i < vCount; i++)
+            {
+                int k = i * 3;
+                sb.Append(FormatF(normals[k])).Append(" ")
+                  .Append(FormatF(normals[k + 1])).Append(" ")
+                  .Append(FormatF(normals[k + 2])).Append(i == vCount - 1 ? "" : " ");
+            }
+            sb.AppendLine();
+            sb.AppendLine("          </float_array>");
+            sb.AppendLine("          <technique_common>");
+            sb.AppendLine("            <accessor source=\"#" + XmlEscape(norId) + "-array\" count=\"" + vCount.ToString(CultureInfo.InvariantCulture) + "\" stride=\"3\">");
+            sb.AppendLine("              <param name=\"X\" type=\"float\"/>");
+            sb.AppendLine("              <param name=\"Y\" type=\"float\"/>");
+            sb.AppendLine("              <param name=\"Z\" type=\"float\"/>");
+            sb.AppendLine("            </accessor>");
+            sb.AppendLine("          </technique_common>");
+            sb.AppendLine("        </source>");
+
+            // UVs
+            sb.AppendLine("        <source id=\"" + XmlEscape(uvId) + "\">");
+            sb.AppendLine("          <float_array id=\"" + XmlEscape(uvId) + "-array\" count=\"" + (vCount * 2).ToString(CultureInfo.InvariantCulture) + "\">");
+            for (int i = 0; i < vCount; i++)
+            {
+                int k = i * 2;
+                sb.Append(FormatF(uvs[k])).Append(" ")
+                  .Append(FormatF(uvs[k + 1])).Append(i == vCount - 1 ? "" : " ");
+            }
+            sb.AppendLine();
+            sb.AppendLine("          </float_array>");
+            sb.AppendLine("          <technique_common>");
+            sb.AppendLine("            <accessor source=\"#" + XmlEscape(uvId) + "-array\" count=\"" + vCount.ToString(CultureInfo.InvariantCulture) + "\" stride=\"2\">");
+            sb.AppendLine("              <param name=\"S\" type=\"float\"/>");
+            sb.AppendLine("              <param name=\"T\" type=\"float\"/>");
+            sb.AppendLine("            </accessor>");
+            sb.AppendLine("          </technique_common>");
+            sb.AppendLine("        </source>");
+
+            // Vertices
+            sb.AppendLine("        <vertices id=\"" + XmlEscape(vtxId) + "\">");
+            sb.AppendLine("          <input semantic=\"POSITION\" source=\"#" + XmlEscape(posId) + "\"/>");
             sb.AppendLine("        </vertices>");
 
-            int triCount = indices.Length / 3;
-            sb.AppendLine("        <triangles material=\"" + materialId + "\" count=\"" + triCount.ToString(CultureInfo.InvariantCulture) + "\">");
-            sb.AppendLine("          <input semantic=\"VERTEX\" source=\"#" + verticesId + "\" offset=\"0\"/>");
+            // Triangles (offsets: 0=VERTEX, 1=NORMAL, 2=TEXCOORD)
+            sb.AppendLine("        <triangles material=\"" + XmlEscape(matId) + "\" count=\"" + triCount.ToString(CultureInfo.InvariantCulture) + "\">");
+            sb.AppendLine("          <input semantic=\"VERTEX\" source=\"#" + XmlEscape(vtxId) + "\" offset=\"0\"/>");
+            sb.AppendLine("          <input semantic=\"NORMAL\" source=\"#" + XmlEscape(norId) + "\" offset=\"1\"/>");
+            sb.AppendLine("          <input semantic=\"TEXCOORD\" source=\"#" + XmlEscape(uvId) + "\" offset=\"2\" set=\"0\"/>");
             sb.Append("          <p>");
-            for (int i = 0; i < indices.Length; i++)
+            for (int t = 0; t < triCount; t++)
             {
-                sb.Append(indices[i].ToString(CultureInfo.InvariantCulture));
-                if (i + 1 < indices.Length)
-                    sb.Append(" ");
+                int i0 = indices[t * 3 + 0];
+                int i1 = indices[t * 3 + 1];
+                int i2 = indices[t * 3 + 2];
+
+                // Para cada vértice: vIndex nIndex uvIndex (todos iguales, 1:1)
+                sb.Append(i0.ToString(CultureInfo.InvariantCulture)).Append(" ")
+                  .Append(i0.ToString(CultureInfo.InvariantCulture)).Append(" ")
+                  .Append(i0.ToString(CultureInfo.InvariantCulture)).Append(" ");
+
+                sb.Append(i1.ToString(CultureInfo.InvariantCulture)).Append(" ")
+                  .Append(i1.ToString(CultureInfo.InvariantCulture)).Append(" ")
+                  .Append(i1.ToString(CultureInfo.InvariantCulture)).Append(" ");
+
+                sb.Append(i2.ToString(CultureInfo.InvariantCulture)).Append(" ")
+                  .Append(i2.ToString(CultureInfo.InvariantCulture)).Append(" ")
+                  .Append(i2.ToString(CultureInfo.InvariantCulture));
+
+                if (t != triCount - 1) sb.Append(" ");
             }
             sb.AppendLine("</p>");
             sb.AppendLine("        </triangles>");
@@ -2753,13 +2965,16 @@ namespace URDFConverterAddIn
             sb.AppendLine("    </geometry>");
             sb.AppendLine("  </library_geometries>");
 
+            // Visual Scene
             sb.AppendLine("  <library_visual_scenes>");
             sb.AppendLine("    <visual_scene id=\"Scene\" name=\"Scene\">");
-            sb.AppendLine("      <node id=\"" + geometryName + "_node\" name=\"" + geometryName + "\">");
-            sb.AppendLine("        <instance_geometry url=\"#" + geomId + "\">");
+            sb.AppendLine("      <node id=\"" + XmlEscape(meshId) + "\" name=\"" + XmlEscape(meshId) + "\">");
+            sb.AppendLine("        <instance_geometry url=\"#" + XmlEscape(geomId) + "\">");
             sb.AppendLine("          <bind_material>");
             sb.AppendLine("            <technique_common>");
-            sb.AppendLine("              <instance_material symbol=\"" + materialId + "\" target=\"#" + materialId + "\"/>");
+            sb.AppendLine("              <instance_material symbol=\"" + XmlEscape(matId) + "\" target=\"#" + XmlEscape(matId) + "\">");
+            sb.AppendLine("                <bind_vertex_input semantic=\"UVSET0\" input_semantic=\"TEXCOORD\" input_set=\"0\"/>");
+            sb.AppendLine("              </instance_material>");
             sb.AppendLine("            </technique_common>");
             sb.AppendLine("          </bind_material>");
             sb.AppendLine("        </instance_geometry>");
@@ -2772,271 +2987,362 @@ namespace URDFConverterAddIn
             sb.AppendLine("  </scene>");
             sb.AppendLine("</COLLADA>");
 
-            return sb.ToString();
+            IOFile.WriteAllText(daePath, sb.ToString(), Encoding.UTF8);
         }
 
-        private static string FloatToString(double value)
+        private static double[] BuildVertexNormals(double[] vertices, int[] indices)
         {
-            return value.ToString(CultureInfo.InvariantCulture);
+            int vCount = vertices.Length / 3;
+            double[] n = new double[vCount * 3];
+
+            int triCount = indices.Length / 3;
+            for (int t = 0; t < triCount; t++)
+            {
+                int i0 = indices[t * 3 + 0];
+                int i1 = indices[t * 3 + 1];
+                int i2 = indices[t * 3 + 2];
+
+                int a0 = i0 * 3, a1 = i1 * 3, a2 = i2 * 3;
+
+                double x0 = vertices[a0], y0 = vertices[a0 + 1], z0 = vertices[a0 + 2];
+                double x1 = vertices[a1], y1 = vertices[a1 + 1], z1 = vertices[a1 + 2];
+                double x2 = vertices[a2], y2 = vertices[a2 + 1], z2 = vertices[a2 + 2];
+
+                double ux = x1 - x0, uy = y1 - y0, uz = z1 - z0;
+                double vx = x2 - x0, vy = y2 - y0, vz = z2 - z0;
+
+                double nx = uy * vz - uz * vy;
+                double ny = uz * vx - ux * vz;
+                double nz = ux * vy - uy * vx;
+
+                // acumular
+                n[a0] += nx; n[a0 + 1] += ny; n[a0 + 2] += nz;
+                n[a1] += nx; n[a1 + 1] += ny; n[a1 + 2] += nz;
+                n[a2] += nx; n[a2 + 1] += ny; n[a2 + 2] += nz;
+            }
+
+            for (int i = 0; i < vCount; i++)
+            {
+                int k = i * 3;
+                double x = n[k], y = n[k + 1], z = n[k + 2];
+                double len = Math.Sqrt(x * x + y * y + z * z);
+                if (len < 1e-12)
+                {
+                    n[k] = 0; n[k + 1] = 0; n[k + 2] = 1;
+                }
+                else
+                {
+                    n[k] = x / len; n[k + 1] = y / len; n[k + 2] = z / len;
+                }
+            }
+
+            return n;
+        }
+
+        private static double[] BuildPlanarUV(double[] vertices)
+        {
+            int vCount = vertices.Length / 3;
+            double[] uv = new double[vCount * 2];
+
+            double minX = double.PositiveInfinity, minY = double.PositiveInfinity;
+            double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity;
+
+            for (int i = 0; i < vCount; i++)
+            {
+                int k = i * 3;
+                double x = vertices[k];
+                double y = vertices[k + 1];
+
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+            }
+
+            double dx = maxX - minX;
+            double dy = maxY - minY;
+            if (dx < 1e-12) dx = 1.0;
+            if (dy < 1e-12) dy = 1.0;
+
+            for (int i = 0; i < vCount; i++)
+            {
+                int k3 = i * 3;
+                int k2 = i * 2;
+
+                double x = vertices[k3];
+                double y = vertices[k3 + 1];
+
+                double u = (x - minX) / dx;
+                double v = (y - minY) / dy;
+
+                // Collada/DAE normalmente usa (0,0) abajo-izquierda; dejamos tal cual
+                uv[k2] = u;
+                uv[k2 + 1] = v;
+            }
+
+            return uv;
+        }
+
+        private static string XmlEscape(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")
+                    .Replace("\"", "&quot;").Replace("'", "&apos;");
+        }
+
+        private static string FormatF(double v)
+        {
+            // compacto pero estable
+            return v.ToString("G9", CultureInfo.InvariantCulture);
         }
 
         // =====================================================
-        //  INERTIAL DESDE MassProperties
+        //  INERTIAL: leer MassProperties con fallback robusto
         // =====================================================
-        private static void FillLinkInertialFromMassProperties(
-            UrdfLink link,
-            MassProperties mp)
+        private static void FillLinkInertialFromMassProperties(UrdfLink link, MassProperties mp)
         {
             if (link == null || mp == null)
-            {
-                DebugLog("SYS", "FillLinkInertialFromMassProperties: link o mp nulos, se omite.");
                 return;
+
+            // Defaults "seguros"
+            link.InertialMass = 1.0;
+            link.InertialOriginXYZ = new double[] { 0, 0, 0 };
+            link.InertiaIxx = 1e-4;
+            link.InertiaIyy = 1e-4;
+            link.InertiaIzz = 1e-4;
+            link.InertiaIxy = 0;
+            link.InertiaIxz = 0;
+            link.InertiaIyz = 0;
+
+            try
+            {
+                // Mass (kg)
+                try
+                {
+                    link.InertialMass = mp.Mass;
+                }
+                catch { }
+
+                // Center of mass (Inventor: cm)
+                try
+                {
+                    object comObj = null;
+                    try { comObj = mp.CenterOfMass; } catch { comObj = null; }
+
+                    if (comObj != null)
+                    {
+                        // Inventor.Point normalmente tiene X/Y/Z en cm
+                        double cx = 0, cy = 0, cz = 0;
+
+                        try { cx = (double)comObj.GetType().InvokeMember("X", System.Reflection.BindingFlags.GetProperty, null, comObj, null); } catch { }
+                        try { cy = (double)comObj.GetType().InvokeMember("Y", System.Reflection.BindingFlags.GetProperty, null, comObj, null); } catch { }
+                        try { cz = (double)comObj.GetType().InvokeMember("Z", System.Reflection.BindingFlags.GetProperty, null, comObj, null); } catch { }
+
+                        link.InertialOriginXYZ = new double[] { cx * 0.01, cy * 0.01, cz * 0.01 };
+                    }
+                }
+                catch { }
+
+                // Inertia tensor: intentamos varias rutas (depende versión/API)
+                // Si viene en kg*cm^2, convertir a kg*m^2 multiplicando por 1e-4.
+                bool gotTensor = false;
+
+                try
+                {
+                    object tensor = null;
+                    try { tensor = mp.GetType().InvokeMember("InertiaTensor", System.Reflection.BindingFlags.GetProperty, null, mp, null); }
+                    catch { tensor = null; }
+
+                    if (tensor != null)
+                    {
+                        // Algunos exponen Matrix con Cell[1..3,1..3]
+                        try
+                        {
+                            // Inventor.Matrix tiene Cell[row,col]
+                            double i11 = (double)tensor.GetType().InvokeMember("Cell", System.Reflection.BindingFlags.GetProperty, null, tensor, new object[] { 1, 1 });
+                            double i22 = (double)tensor.GetType().InvokeMember("Cell", System.Reflection.BindingFlags.GetProperty, null, tensor, new object[] { 2, 2 });
+                            double i33 = (double)tensor.GetType().InvokeMember("Cell", System.Reflection.BindingFlags.GetProperty, null, tensor, new object[] { 3, 3 });
+
+                            double i12 = (double)tensor.GetType().InvokeMember("Cell", System.Reflection.BindingFlags.GetProperty, null, tensor, new object[] { 1, 2 });
+                            double i13 = (double)tensor.GetType().InvokeMember("Cell", System.Reflection.BindingFlags.GetProperty, null, tensor, new object[] { 1, 3 });
+                            double i23 = (double)tensor.GetType().InvokeMember("Cell", System.Reflection.BindingFlags.GetProperty, null, tensor, new object[] { 2, 3 });
+
+                            double s = 1e-4; // cm^2 -> m^2
+                            link.InertiaIxx = i11 * s;
+                            link.InertiaIyy = i22 * s;
+                            link.InertiaIzz = i33 * s;
+                            link.InertiaIxy = i12 * s;
+                            link.InertiaIxz = i13 * s;
+                            link.InertiaIyz = i23 * s;
+
+                            gotTensor = true;
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+
+                if (!gotTensor)
+                {
+                    // fallback: dejar diagonal pequeña proporcional a masa
+                    double m = (link.InertialMass > 1e-9) ? link.InertialMass : 1.0;
+                    double d = 1e-4 * m;
+                    link.InertiaIxx = d;
+                    link.InertiaIyy = d;
+                    link.InertiaIzz = d;
+                    link.InertiaIxy = 0;
+                    link.InertiaIxz = 0;
+                    link.InertiaIyz = 0;
+                }
             }
-
-            double mass = mp.Mass;
-
-            Inventor.Point com = mp.CenterOfMass;
-            double scaleToMeters = 0.01;
-            double comGlobalX = com.X * scaleToMeters;
-            double comGlobalY = com.Y * scaleToMeters;
-            double comGlobalZ = com.Z * scaleToMeters;
-
-            double originX = 0.0;
-            double originY = 0.0;
-            double originZ = 0.0;
-            if (link.OriginXYZ != null && link.OriginXYZ.Length == 3)
+            catch
             {
-                originX = link.OriginXYZ[0];
-                originY = link.OriginXYZ[1];
-                originZ = link.OriginXYZ[2];
+                // Si algo falla: se quedan defaults
             }
-
-            double comLocalX = comGlobalX - originX;
-            double comLocalY = comGlobalY - originY;
-            double comLocalZ = comGlobalZ - originZ;
-
-            double Ixx, Iyy, Izz, Ixy, Iyz, Ixz;
-            mp.XYZMomentsOfInertia(out Ixx, out Iyy, out Izz, out Ixy, out Iyz, out Ixz);
-
-            double inertiaScale = scaleToMeters * scaleToMeters;
-            Ixx *= inertiaScale;
-            Iyy *= inertiaScale;
-            Izz *= inertiaScale;
-            Ixy *= inertiaScale;
-            Iyz *= inertiaScale;
-            Ixz *= inertiaScale;
-
-            link.HasInertial = true;
-            link.Mass = mass;
-
-            link.InertialOriginXYZ = new double[]
-            {
-                comLocalX, comLocalY, comLocalZ
-            };
-            link.InertialOriginRPY = new double[]
-            {
-                0.0, 0.0, 0.0
-            };
-
-            link.Ixx = Ixx;
-            link.Iyy = Iyy;
-            link.Izz = Izz;
-            link.Ixy = Ixy;
-            link.Iyz = Iyz;
-            link.Ixz = Ixz;
-
-            DebugLog(
-                "SYS",
-                "Inercial link '" + link.Name + "': mass=" +
-                mass.ToString("G5", CultureInfo.InvariantCulture) +
-                " kg, COM_local=(" +
-                comLocalX.ToString("G5", CultureInfo.InvariantCulture) + "," +
-                comLocalY.ToString("G5", CultureInfo.InvariantCulture) + "," +
-                comLocalZ.ToString("G5", CultureInfo.InvariantCulture) + ") " +
-                "I=(Ixx=" + Ixx.ToString("G5", CultureInfo.InvariantCulture) +
-                ", Iyy=" + Iyy.ToString("G5", CultureInfo.InvariantCulture) +
-                ", Izz=" + Izz.ToString("G5", CultureInfo.InvariantCulture) + ")");
         }
 
         // =====================================================
-        //  WriteUrdfFile
+        //  URDF writer
         // =====================================================
         private static void WriteUrdfFile(RobotModel robot, string urdfPath)
         {
-            if (robot == null)
-            {
-                DebugLog("SYS", "WriteUrdfFile: robot == null, no se escribe URDF.");
+            if (robot == null || string.IsNullOrEmpty(urdfPath))
                 return;
-            }
 
-            DebugLog("SYS",
-                "WriteUrdfFile: urdfPath='" + urdfPath +
-                "', numLinks=" + robot.Links.Count.ToString(CultureInfo.InvariantCulture) +
-                ", numJoints=" + robot.Joints.Count.ToString(CultureInfo.InvariantCulture));
-
-            StringBuilder sb = new StringBuilder();
-
-            string robotName = robot.Name;
-            if (string.IsNullOrEmpty(robotName))
-                robotName = "InventorRobot";
+            StringBuilder sb = new StringBuilder(1024 * 256);
 
             sb.AppendLine("<?xml version=\"1.0\"?>");
-            sb.AppendLine("<robot name=\"" + XmlEscape(robotName) + "\">");
+            sb.AppendLine("<robot name=\"" + XmlEscape(robot.Name ?? "robot") + "\">");
 
             // LINKS
             foreach (UrdfLink link in robot.Links)
             {
-                if (link == null)
-                    continue;
-
-                DebugLog("SYS",
-                    "WriteUrdfFile: LINK name='" + link.Name +
-                    "', mesh='" + (link.MeshFile ?? "(null)") +
-                    "', hasInertial=" + link.HasInertial.ToString());
+                if (link == null || string.IsNullOrEmpty(link.Name)) continue;
 
                 sb.AppendLine("  <link name=\"" + XmlEscape(link.Name) + "\">");
 
-                // INERTIAL
-                if (link.HasInertial)
+                // inertial (si hay mesh, igual agregamos inertial básico)
+                if (link.InertialMass > 0.0)
                 {
-                    string xyzIn = string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} {1} {2}",
-                        link.InertialOriginXYZ[0],
-                        link.InertialOriginXYZ[1],
-                        link.InertialOriginXYZ[2]);
+                    double[] ixyz = link.InertialOriginXYZ ?? new double[] { 0, 0, 0 };
 
-                    string rpyIn = string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} {1} {2}",
-                        link.InertialOriginRPY[0],
-                        link.InertialOriginRPY[1],
-                        link.InertialOriginRPY[2]);
-
-                    sb.AppendLine("    <inertial>");
-                    sb.AppendLine("      <origin xyz=\"" + xyzIn + "\" rpy=\"" + rpyIn + "\"/>");
-                    sb.AppendLine("      <mass value=\"" +
-                        link.Mass.ToString(CultureInfo.InvariantCulture) + "\"/>");
-                    sb.AppendLine(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "      <inertia ixx=\"{0}\" ixy=\"{1}\" ixz=\"{2}\" iyy=\"{3}\" iyz=\"{4}\" izz=\"{5}\"/>",
-                        link.Ixx, link.Ixy, link.Ixz, link.Iyy, link.Iyz, link.Izz));
-                    sb.AppendLine("    </inertial>");
-                }
-                else
-                {
-                    sb.AppendLine("    <inertial>");
-                    sb.AppendLine("      <origin xyz=\"0 0 0\" rpy=\"0 0 0\"/>");
-                    sb.AppendLine("      <mass value=\"1e-06\"/>");
-                    sb.AppendLine("      <inertia ixx=\"1e-06\" ixy=\"0\" ixz=\"0\" iyy=\"1e-06\" iyz=\"0\" izz=\"1e-06\"/>");
-                    sb.AppendLine("    </inertial>");
+                    sb.Append("    <inertial>\n");
+                    sb.Append("      <origin xyz=\"").Append(FormatXYZ(ixyz)).Append("\" rpy=\"0 0 0\"/>\n");
+                    sb.Append("      <mass value=\"").Append(FormatF(link.InertialMass)).Append("\"/>\n");
+                    sb.Append("      <inertia ");
+                    sb.Append("ixx=\"").Append(FormatF(link.InertiaIxx)).Append("\" ");
+                    sb.Append("ixy=\"").Append(FormatF(link.InertiaIxy)).Append("\" ");
+                    sb.Append("ixz=\"").Append(FormatF(link.InertiaIxz)).Append("\" ");
+                    sb.Append("iyy=\"").Append(FormatF(link.InertiaIyy)).Append("\" ");
+                    sb.Append("iyz=\"").Append(FormatF(link.InertiaIyz)).Append("\" ");
+                    sb.Append("izz=\"").Append(FormatF(link.InertiaIzz)).Append("\"/>\n");
+                    sb.Append("    </inertial>\n");
                 }
 
-                // VISUAL
+                // visual/collision si hay malla
                 if (!string.IsNullOrEmpty(link.MeshFile))
                 {
-                    sb.AppendLine("    <visual>");
-                    sb.AppendLine("      <origin xyz=\"0 0 0\" rpy=\"0 0 0\"/>");
-                    sb.AppendLine("      <geometry>");
-                    sb.AppendLine("        <mesh filename=\"" + XmlEscape(link.MeshFile) + "\"/>");
-                    sb.AppendLine("      </geometry>");
-                    sb.AppendLine("    </visual>");
+                    sb.Append("    <visual>\n");
+                    sb.Append("      <origin xyz=\"0 0 0\" rpy=\"0 0 0\"/>\n");
+                    sb.Append("      <geometry>\n");
+                    sb.Append("        <mesh filename=\"").Append(XmlEscape(link.MeshFile)).Append("\"/>\n");
+                    sb.Append("      </geometry>\n");
+                    sb.Append("      <material name=\"mat_").Append(XmlEscape(link.Name)).Append("\">\n");
+                    sb.Append("        <texture filename=\"meshes/").Append(XmlEscape(link.Name)).Append(".png\"/>\n");
+                    sb.Append("      </material>\n");
+                    sb.Append("    </visual>\n");
+
+                    sb.Append("    <collision>\n");
+                    sb.Append("      <origin xyz=\"0 0 0\" rpy=\"0 0 0\"/>\n");
+                    sb.Append("      <geometry>\n");
+                    sb.Append("        <mesh filename=\"").Append(XmlEscape(link.MeshFile)).Append("\"/>\n");
+                    sb.Append("      </geometry>\n");
+                    sb.Append("    </collision>\n");
                 }
 
                 sb.AppendLine("  </link>");
             }
 
             // JOINTS
-            foreach (UrdfJoint joint in robot.Joints)
+            foreach (UrdfJoint j in robot.Joints)
             {
-                if (joint == null)
-                    continue;
+                if (j == null || string.IsNullOrEmpty(j.Name)) continue;
+                if (string.IsNullOrEmpty(j.ParentLink) || string.IsNullOrEmpty(j.ChildLink)) continue;
 
-                DebugLog("SYS",
-                    "WriteUrdfFile: JOINT name='" + joint.Name +
-                    "', type='" + joint.Type +
-                    "', parent='" + joint.ParentLink +
-                    "', child='" + joint.ChildLink + "'");
+                string type = string.IsNullOrEmpty(j.Type) ? "fixed" : j.Type;
 
-                sb.AppendLine("  <joint name=\"" +
-                    XmlEscape(joint.Name) + "\" type=\"" +
-                    XmlEscape(joint.Type) + "\">");
+                sb.Append("  <joint name=\"").Append(XmlEscape(j.Name)).Append("\" type=\"").Append(XmlEscape(type)).Append("\">\n");
+                sb.Append("    <parent link=\"").Append(XmlEscape(j.ParentLink)).Append("\"/>\n");
+                sb.Append("    <child link=\"").Append(XmlEscape(j.ChildLink)).Append("\"/>\n");
 
-                sb.AppendLine("    <parent link=\"" +
-                    XmlEscape(joint.ParentLink) + "\"/>");
-                sb.AppendLine("    <child link=\"" +
-                    XmlEscape(joint.ChildLink) + "\"/>");
+                double[] oxyz = j.OriginXYZ ?? new double[] { 0, 0, 0 };
+                double[] orpy = j.OriginRPY ?? new double[] { 0, 0, 0 };
+                sb.Append("    <origin xyz=\"").Append(FormatXYZ(oxyz)).Append("\" rpy=\"").Append(FormatXYZ(orpy)).Append("\"/>\n");
 
-                string xyz = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0} {1} {2}",
-                    joint.OriginXYZ[0],
-                    joint.OriginXYZ[1],
-                    joint.OriginXYZ[2]);
-
-                string rpy = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0} {1} {2}",
-                    joint.OriginRPY[0],
-                    joint.OriginRPY[1],
-                    joint.OriginRPY[2]);
-
-                sb.AppendLine("    <origin xyz=\"" + xyz + "\" rpy=\"" + rpy + "\"/>");
-
-                bool isFixed = string.Equals(joint.Type, "fixed", StringComparison.OrdinalIgnoreCase);
-                bool isRevolute = string.Equals(joint.Type, "revolute", StringComparison.OrdinalIgnoreCase);
-                bool isPrismatic = string.Equals(joint.Type, "prismatic", StringComparison.OrdinalIgnoreCase);
-                bool isContinuous = string.Equals(joint.Type, "continuous", StringComparison.OrdinalIgnoreCase);
-
-                // Eje del joint (para revolute/prismatic/continuous)
-                if (!isFixed && joint.AxisXYZ != null && joint.AxisXYZ.Length == 3)
+                if (!string.Equals(type, "fixed", StringComparison.OrdinalIgnoreCase))
                 {
-                    string axisStr = string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} {1} {2}",
-                        joint.AxisXYZ[0],
-                        joint.AxisXYZ[1],
-                        joint.AxisXYZ[2]);
-                    sb.AppendLine("    <axis xyz=\"" + axisStr + "\"/>");
+                    double[] axis = (j.AxisXYZ != null && j.AxisXYZ.Length == 3) ? j.AxisXYZ : new double[] { 0, 0, 1 };
+                    sb.Append("    <axis xyz=\"").Append(FormatXYZ(axis)).Append("\"/>\n");
+
+                    // limits (solo para revolute/prismatic)
+                    if (string.Equals(type, "revolute", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(type, "prismatic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        double lower = j.LimitLower;
+                        double upper = j.LimitUpper;
+
+                        // defaults suaves (evitar URDF inválido)
+                        double effort = (j.LimitEffort > 0) ? j.LimitEffort : 10.0;
+                        double vel = (j.LimitVelocity > 0) ? j.LimitVelocity : 1.0;
+
+                        // Si no definiste rangos, ponemos algo razonable
+                        if (string.Equals(type, "revolute", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Math.Abs(upper - lower) < 1e-9)
+                            {
+                                lower = -Math.PI;
+                                upper = Math.PI;
+                            }
+                        }
+                        else
+                        {
+                            if (Math.Abs(upper - lower) < 1e-9)
+                            {
+                                lower = -0.1;
+                                upper = 0.1;
+                            }
+                        }
+
+                        sb.Append("    <limit lower=\"").Append(FormatF(lower))
+                          .Append("\" upper=\"").Append(FormatF(upper))
+                          .Append("\" effort=\"").Append(FormatF(effort))
+                          .Append("\" velocity=\"").Append(FormatF(vel))
+                          .Append("\"/>\n");
+                    }
                 }
 
-                // Límites básicos (por defecto) para revolute/prismatic
-                if (isRevolute || isPrismatic)
-                {
-                    sb.AppendLine("    <limit lower=\"-3.14159\" upper=\"3.14159\" effort=\"1\" velocity=\"1\"/>");
-                }
-
-                sb.AppendLine("  </joint>");
+                sb.Append("  </joint>\n");
             }
 
             sb.AppendLine("</robot>");
 
-            IOFile.WriteAllText(urdfPath, sb.ToString());
-
-            DebugLog("SYS", "WriteUrdfFile: URDF guardado en '" + urdfPath + "'");
+            IOFile.WriteAllText(urdfPath, sb.ToString(), Encoding.UTF8);
         }
 
-        // =====================================================
-        //  XmlEscape
-        // =====================================================
-        private static string XmlEscape(string s)
+        private static string FormatXYZ(double[] v)
         {
-            if (s == null)
-                return "";
-
-            string result = s;
-            result = result.Replace("&", "&amp;");
-            result = result.Replace("<", "&lt;");
-            result = result.Replace(">", "&gt;");
-            result = result.Replace("\"", "&quot;");
-            return result;
+            if (v == null || v.Length < 3) return "0 0 0";
+            return FormatF(v[0]) + " " + FormatF(v[1]) + " " + FormatF(v[2]);
         }
 
         // =====================================================
-        //  MatrixToRPY
+        //  Matrix → RPY (rad)  (roll X, pitch Y, yaw Z)
         // =====================================================
         private static void MatrixToRPY(Matrix m, out double roll, out double pitch, out double yaw)
         {
+            roll = pitch = yaw = 0.0;
+            if (m == null) return;
+
             double r11 = m.Cell[1, 1];
             double r12 = m.Cell[1, 2];
             double r13 = m.Cell[1, 3];
@@ -3064,77 +3370,60 @@ namespace URDFConverterAddIn
                 roll = 0.0;
                 yaw = Math.Atan2(-r12, r22);
             }
-
-            DebugLog("TFM",
-                "MatrixToRPY: roll=" + roll.ToString("F4", CultureInfo.InvariantCulture) +
-                ", pitch=" + pitch.ToString("F4", CultureInfo.InvariantCulture) +
-                ", yaw=" + yaw.ToString("F4", CultureInfo.InvariantCulture));
         }
+    }
 
-    } // fin clase UrdfExporter
-
-
-    // =====================================================
-    //  Clases simples de modelo URDF
-    // =====================================================
+    // ========================================================================
+    //  MODELOS SIMPLES
+    // ========================================================================
     public class RobotModel
     {
-        public string Name;
-
-        public List<UrdfLink> Links;
-        public List<UrdfJoint> Joints;
-
-        public RobotModel()
-        {
-            Links = new List<UrdfLink>();
-            Joints = new List<UrdfJoint>();
-        }
+        public string Name = "robot";
+        public List<UrdfLink> Links = new List<UrdfLink>();
+        public List<UrdfJoint> Joints = new List<UrdfJoint>();
     }
 
     public class UrdfLink
     {
         public string Name;
 
-        public string MeshFile;
-
+        // Para compatibilidad (se usa en tu builder; la visual va en origen 0,0,0)
         public double[] OriginXYZ;
         public double[] OriginRPY;
 
-        public bool HasInertial = false;
+        // malla (relativa dentro de exportDir)
+        public string MeshFile;
 
-        public double Mass = 1e-6;
+        // Inertial (URDF)
+        public double InertialMass = 1.0;
+        public double[] InertialOriginXYZ = new double[] { 0, 0, 0 };
 
-        public double[] InertialOriginXYZ = new double[] { 0.0, 0.0, 0.0 };
-        public double[] InertialOriginRPY = new double[] { 0.0, 0.0, 0.0 };
-
-        public double Ixx = 1e-6;
-        public double Iyy = 1e-6;
-        public double Izz = 1e-6;
-        public double Ixy = 0.0;
-        public double Iyz = 0.0;
-        public double Ixz = 0.0;
+        public double InertiaIxx = 1e-4;
+        public double InertiaIxy = 0.0;
+        public double InertiaIxz = 0.0;
+        public double InertiaIyy = 1e-4;
+        public double InertiaIyz = 0.0;
+        public double InertiaIzz = 1e-4;
     }
 
     public class UrdfJoint
     {
         public string Name;
-        public string Type;
+        public string Type; // fixed / revolute / continuous / prismatic
+
         public string ParentLink;
         public string ChildLink;
 
-        public double[] OriginXYZ;
-        public double[] OriginRPY;
+        public double[] OriginXYZ = new double[] { 0, 0, 0 };
+        public double[] OriginRPY = new double[] { 0, 0, 0 };
 
-        // Eje del joint (para revolute / prismatic / continuous)
-        public double[] AxisXYZ;
+        // axis en el frame del joint (normalmente frame del child/origin)
+        public double[] AxisXYZ = null;
 
-        public UrdfJoint()
-        {
-            Type = "fixed";
-            OriginXYZ = new double[] { 0.0, 0.0, 0.0 };
-            OriginRPY = new double[] { 0.0, 0.0, 0.0 };
-            AxisXYZ = new double[] { 0.0, 0.0, 1.0 }; // Z por defecto
-        }
+        // Limits (solo para revolute/prismatic)
+        public double LimitLower = 0.0;
+        public double LimitUpper = 0.0;
+        public double LimitEffort = 0.0;
+        public double LimitVelocity = 0.0;
     }
-
-} // fin namespace URDFConverterAddIn
+}
