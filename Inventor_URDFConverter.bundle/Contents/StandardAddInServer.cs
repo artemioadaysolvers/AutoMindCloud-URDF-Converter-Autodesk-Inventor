@@ -15,7 +15,7 @@ using Inventor;
 namespace URDFConverterAddIn
 {
     // GUID NUEVO: d507347f-7ff3-4dc0-a66d-5e596f9e9d89
-    [Guid("d507347f-7ff3-4dc0-a66d-5e596f9e9d89")]
+    [Guid("13c0f7be-eb12-48e9-963a-83e672efe557")]
     [ComVisible(true)]
     public class StandardAddInServer : ApplicationAddInServer
     {
@@ -26,7 +26,7 @@ namespace URDFConverterAddIn
         private ButtonDefinition _exportUrdfDisplayButton;
 
         // ClientId del AddIn: DEBE ser el mismo GUID que arriba, pero con llaves
-        private const string AddInClientId = "{d507347f-7ff3-4dc0-a66d-5e596f9e9d89}";
+        private const string AddInClientId = "{13c0f7be-eb12-48e9-963a-83e672efe557}";
 
         // ----------------------------------------------------
         //  Activate: se ejecuta cuando Inventor carga el AddIn
@@ -112,7 +112,7 @@ namespace URDFConverterAddIn
                 // 2.1) Ribbon de PIEZAS (Part)
                 try
                 {
-                    Ribbon partRibbon      = uiMgr.Ribbons["Part"];
+                    Ribbon partRibbon = uiMgr.Ribbons["Part"];
                     RibbonTab toolsTabPart = partRibbon.RibbonTabs["id_TabTools"];
 
                     RibbonPanel urdfPanelPart = null;
@@ -149,7 +149,7 @@ namespace URDFConverterAddIn
                 // 2.2) Ribbon de ENSAMBLAJES (Assembly)
                 try
                 {
-                    Ribbon asmRibbon      = uiMgr.Ribbons["Assembly"];
+                    Ribbon asmRibbon = uiMgr.Ribbons["Assembly"];
                     RibbonTab toolsTabAsm = asmRibbon.RibbonTabs["id_TabTools"];
 
                     RibbonPanel urdfPanelAsm = null;
@@ -280,16 +280,16 @@ namespace URDFConverterAddIn
         public static string GetMeshQualityMode() { return _meshQualityMode; }
 
         // Debug flags
-        private static bool _DEBUG_SYS        = true;
+        private static bool _DEBUG_SYS = true;
         private static bool _DEBUG_TRANSFORMS = true;
-        private static bool _DEBUG_MESH_TREE  = true;
+        private static bool _DEBUG_MESH_TREE = true;
         private static bool _DEBUG_LINK_JOINT = true;
 
         private static void DebugLog(string category, string message)
         {
-            if (category == "SYS"  && !_DEBUG_SYS)        return;
-            if (category == "TFM"  && !_DEBUG_TRANSFORMS) return;
-            if (category == "MESH" && !_DEBUG_MESH_TREE)  return;
+            if (category == "SYS" && !_DEBUG_SYS) return;
+            if (category == "TFM" && !_DEBUG_TRANSFORMS) return;
+            if (category == "MESH" && !_DEBUG_MESH_TREE) return;
             if (category == "LINK" && !_DEBUG_LINK_JOINT) return;
 
             string full = "[URDF][" + category + "] " + message;
@@ -344,7 +344,7 @@ namespace URDFConverterAddIn
                 return;
             }
 
-            string baseDir  = IOPath.GetDirectoryName(fullPath);
+            string baseDir = IOPath.GetDirectoryName(fullPath);
             string baseName = IOPath.GetFileNameWithoutExtension(fullPath);
 
             DebugLog("SYS",
@@ -444,16 +444,6 @@ namespace URDFConverterAddIn
             return robot;
         }
 
-
-
-
-
-
-
-
-
-
-
         // =====================================================
         //  PART: un link por SurfaceBody (root_body_i_...)
         // =====================================================
@@ -534,18 +524,13 @@ namespace URDFConverterAddIn
         // =====================================================
         //  ASSEMBLY: un link por body y por occurrence hoja
         //           nombres únicos: link_<occIndex>_<occName>[_bN]
-        //
-        //  NOTA: aquí, de momento, todos los joints se marcan como
-        //  "fixed". Cuando conectemos propiedades fiables del .iam
-        //  (constraints, etc.), este es el sitio para cambiar:
-        //  joint.Type → "revolute", "prismatic", "continuous", etc.
         // =====================================================
         private static void AddAssemblyOccurrencesAndBodiesAsLinks(
             AssemblyDocument asmDoc,
             RobotModel robot)
         {
             AssemblyComponentDefinition asmDef = asmDoc.ComponentDefinition;
-            ComponentOccurrences occs         = asmDef.Occurrences;
+            ComponentOccurrences occs = asmDef.Occurrences;
 
             ComponentOccurrencesEnumerator leafOccs = occs.AllLeafOccurrences;
 
@@ -606,7 +591,7 @@ namespace URDFConverterAddIn
                         pitch.ToString(CultureInfo.InvariantCulture) + ", " +
                         yaw.ToString(CultureInfo.InvariantCulture) + ")");
 
-                    string rawName  = occ.Name;
+                    string rawName = occ.Name;
                     string safeName = MakeSafeName(rawName);
 
                     string baseLinkName = "link_" +
@@ -622,26 +607,21 @@ namespace URDFConverterAddIn
                         string linkName = baseLinkName + suffix;
 
                         UrdfLink link = new UrdfLink();
-                        link.Name      = linkName;
+                        link.Name = linkName;
                         link.OriginXYZ = new double[] { tx_m, ty_m, tz_m };
                         link.OriginRPY = new double[] { roll, pitch, yaw };
                         robot.Links.Add(link);
 
-                        // Por ahora todos "fixed" (0 DOF). Aquí luego
-                        // se mapearán a:
-                        // - revolute/prismatic → DOF del eslabón
-                        // - continuous → ruedas/ejes
-                        // - floating/planar → base del robot
                         UrdfJoint joint = new UrdfJoint();
                         joint.Type = "fixed";
 
                         if (i == 0)
                         {
-                            joint.Name       = "root_" + linkName;
+                            joint.Name = "root_" + linkName;
                             joint.ParentLink = "base_link";
-                            joint.ChildLink  = linkName;
-                            joint.OriginXYZ  = new double[] { tx_m, ty_m, tz_m };
-                            joint.OriginRPY  = new double[] { roll, pitch, yaw };
+                            joint.ChildLink = linkName;
+                            joint.OriginXYZ = new double[] { tx_m, ty_m, tz_m };
+                            joint.OriginRPY = new double[] { roll, pitch, yaw };
 
                             DebugLog("LINK",
                                 "Añadido link principal '" + linkName +
@@ -649,11 +629,11 @@ namespace URDFConverterAddIn
                         }
                         else
                         {
-                            joint.Name       = "fixed_extra_" + linkName;
+                            joint.Name = "fixed_extra_" + linkName;
                             joint.ParentLink = baseLinkName;
-                            joint.ChildLink  = linkName;
-                            joint.OriginXYZ  = new double[] { 0.0, 0.0, 0.0 };
-                            joint.OriginRPY  = new double[] { 0.0, 0.0, 0.0 };
+                            joint.ChildLink = linkName;
+                            joint.OriginXYZ = new double[] { 0.0, 0.0, 0.0 };
+                            joint.OriginRPY = new double[] { 0.0, 0.0, 0.0 };
 
                             DebugLog("LINK",
                                 "Añadido link extra '" + linkName +
@@ -796,7 +776,7 @@ namespace URDFConverterAddIn
             out int[] indices)
         {
             vertices = null;
-            indices  = null;
+            indices = null;
 
             if (bodies == null || bodies.Count == 0)
             {
@@ -805,8 +785,8 @@ namespace URDFConverterAddIn
             }
 
             List<double> vList = new List<double>();
-            List<int>    iList = new List<int>();
-            int vertexOffset   = 0;
+            List<int> iList = new List<int>();
+            int vertexOffset = 0;
 
             int bodyIndex = 0;
             foreach (SurfaceBody body in bodies)
@@ -839,7 +819,7 @@ namespace URDFConverterAddIn
             }
 
             vertices = vList.ToArray();
-            indices  = iList.ToArray();
+            indices = iList.ToArray();
 
             DebugLog("MESH",
                 "TessellateBodiesToMeshArrays: vertsTotales=" +
@@ -862,11 +842,11 @@ namespace URDFConverterAddIn
                 double tol = (_meshQualityMode == "high") ? 0.05 : 0.1;
 
                 int vertexCount = 0;
-                int facetCount  = 0;
+                int facetCount = 0;
 
-                double[] vertexCoords  = new double[] { };
+                double[] vertexCoords = new double[] { };
                 double[] normalVectors = new double[] { };
-                int[]    vertexIndices = new int[] { };
+                int[] vertexIndices = new int[] { };
 
                 body.CalculateFacets(
                     tol,
@@ -880,7 +860,7 @@ namespace URDFConverterAddIn
                     "TessellateSingleBody: tol=" +
                     tol.ToString(CultureInfo.InvariantCulture) +
                     ", vertexCount=" + vertexCount.ToString(CultureInfo.InvariantCulture) +
-                    ", facetCount="  + facetCount.ToString(CultureInfo.InvariantCulture));
+                    ", facetCount=" + facetCount.ToString(CultureInfo.InvariantCulture));
 
                 if (vertexCount <= 0 || facetCount <= 0 ||
                     vertexCoords == null || vertexCoords.Length == 0 ||
@@ -893,7 +873,7 @@ namespace URDFConverterAddIn
                 // cm → m
                 for (int i = 0; i < vertexCoords.Length; i++)
                 {
-                    double vCm     = vertexCoords[i];
+                    double vCm = vertexCoords[i];
                     double vMeters = vCm * 0.01;
                     vList.Add(vMeters);
                 }
@@ -965,7 +945,7 @@ namespace URDFConverterAddIn
 
             for (int i = 0; i < verticesWorld.Length; i += 3)
             {
-                double vx = verticesWorld[i]     - tx;
+                double vx = verticesWorld[i] - tx;
                 double vy = verticesWorld[i + 1] - ty;
                 double vz = verticesWorld[i + 2] - tz;
 
@@ -973,7 +953,7 @@ namespace URDFConverterAddIn
                 double ly = r12 * vx + r22 * vy + r32 * vz;
                 double lz = r13 * vx + r23 * vy + r33 * vz;
 
-                verticesLocal[i]     = lx;
+                verticesLocal[i] = lx;
                 verticesLocal[i + 1] = ly;
                 verticesLocal[i + 2] = lz;
             }
@@ -983,103 +963,94 @@ namespace URDFConverterAddIn
                 (verticesWorld.Length / 3).ToString(CultureInfo.InvariantCulture));
         }
 
-
-
-
-
-
-
-
-
         // =====================================================
         //  LOG DE ASSET / APPEARANCE (recorre TODOS los AssetValue)
         // =====================================================
         private static void LogAssetInfo(string ownerKind, string ownerName, Asset app)
         {
-                if (app == null)
-                {
-                        DebugLog("MESH",
-                                "LogAssetInfo: " + ownerKind + "='" + ownerName + "' sin Asset (null).");
-                        return;
-                }
-
-                string appDisplayName = "(sin nombre)";
-                try { appDisplayName = app.DisplayName; }
-                catch { appDisplayName = "(error DisplayName)"; }
-
-                int count = 0;
-                try { count = app.Count; } catch { count = -1; }
-
+            if (app == null)
+            {
                 DebugLog("MESH",
-                        "LogAssetInfo: " + ownerKind +
-                        "='" + ownerName +
-                        "', Asset.DisplayName='" + appDisplayName +
-                        "', AssetValues: Count=" +
-                        count.ToString(CultureInfo.InvariantCulture));
+                        "LogAssetInfo: " + ownerKind + "='" + ownerName + "' sin Asset (null).");
+                return;
+            }
 
-                try
+            string appDisplayName = "(sin nombre)";
+            try { appDisplayName = app.DisplayName; }
+            catch { appDisplayName = "(error DisplayName)"; }
+
+            int count = 0;
+            try { count = app.Count; } catch { count = -1; }
+
+            DebugLog("MESH",
+                    "LogAssetInfo: " + ownerKind +
+                    "='" + ownerName +
+                    "', Asset.DisplayName='" + appDisplayName +
+                    "', AssetValues: Count=" +
+                    count.ToString(CultureInfo.InvariantCulture));
+
+            try
+            {
+                foreach (AssetValue av in app)
                 {
-                        foreach (AssetValue av in app)
+                    if (av == null)
+                    {
+                        DebugLog("MESH", "    [AssetValue null]");
+                        continue;
+                    }
+
+                    string avName = "";
+                    string avDisplay = "";
+                    bool avReadOnly = false;
+                    string avType = "";
+
+                    try { avName = av.Name; } catch { }
+                    try { avDisplay = av.DisplayName; } catch { }
+                    try { avReadOnly = av.IsReadOnly; } catch { }
+                    try { avType = av.ValueType.ToString(); } catch { }
+
+                    DebugLog("MESH",
+                            "    AssetValue: Name='" + avName +
+                            "', DisplayName='" + avDisplay +
+                            "', ValueType=" + avType +
+                            ", IsReadOnly=" + avReadOnly.ToString());
+
+                    // Si es de tipo COLOR, logear también RGBA
+                    try
+                    {
+                        if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
                         {
-                                if (av == null)
+                            ColorAssetValue cav = av as ColorAssetValue;
+                            if (cav != null)
+                            {
+                                Inventor.Color invCol = cav.Value as Inventor.Color;
+                                if (invCol != null)
                                 {
-                                        DebugLog("MESH", "    [AssetValue null]");
-                                        continue;
+                                    DebugLog("MESH",
+                                            "      Color RGBA=(" +
+                                            invCol.Red.ToString(CultureInfo.InvariantCulture) + "," +
+                                            invCol.Green.ToString(CultureInfo.InvariantCulture) + "," +
+                                            invCol.Blue.ToString(CultureInfo.InvariantCulture) + "," +
+                                            invCol.Opacity.ToString(CultureInfo.InvariantCulture) + ")");
                                 }
-
-                                string avName = "";
-                                string avDisplay = "";
-                                bool avReadOnly = false;
-                                string avType = "";
-
-                                try { avName = av.Name; } catch { }
-                                try { avDisplay = av.DisplayName; } catch { }
-                                try { avReadOnly = av.IsReadOnly; } catch { }
-                                try { avType = av.ValueType.ToString(); } catch { }
-
-                                DebugLog("MESH",
-                                        "    AssetValue: Name='" + avName +
-                                        "', DisplayName='" + avDisplay +
-                                        "', ValueType=" + avType +
-                                        ", IsReadOnly=" + avReadOnly.ToString());
-
-                                // Si es de tipo COLOR, logear también RGBA
-                                try
-                                {
-                                        if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
-                                        {
-                                                ColorAssetValue cav = av as ColorAssetValue;
-                                                if (cav != null)
-                                                {
-                                                        Inventor.Color invCol = cav.Value as Inventor.Color;
-                                                        if (invCol != null)
-                                                        {
-                                                                DebugLog("MESH",
-                                                                        "      Color RGBA=(" +
-                                                                        invCol.Red.ToString(CultureInfo.InvariantCulture) + "," +
-                                                                        invCol.Green.ToString(CultureInfo.InvariantCulture) + "," +
-                                                                        invCol.Blue.ToString(CultureInfo.InvariantCulture) + "," +
-                                                                        invCol.Opacity.ToString(CultureInfo.InvariantCulture) + ")");
-                                                        }
-                                                }
-                                        }
-                                }
-                                catch
-                                {
-                                        DebugLog("MESH",
-                                                "      [Error leyendo ColorAssetValue.Value]");
-                                }
+                            }
                         }
+                    }
+                    catch
+                    {
+                        DebugLog("MESH",
+                                "      [Error leyendo ColorAssetValue.Value]");
+                    }
                 }
-                catch
-                {
-                        DebugLog("MESH", "LogAssetInfo: error al iterar AssetValues.");
-                }
+            }
+            catch
+            {
+                DebugLog("MESH", "LogAssetInfo: error al iterar AssetValues.");
+            }
         }
 
         // =====================================================
         //  Helper: buscar color por nombre de AssetValue
-        //          (ej: wallpaint_color, plasticvinyl_color, etc.)
         // =====================================================
         private static bool TryGetColorFromNamedAssetValue(
                 Asset app,
@@ -1088,71 +1059,64 @@ namespace URDFConverterAddIn
                 out double g,
                 out double b)
         {
-                r = 0.8;
-                g = 0.8;
-                b = 0.8;
+            r = 0.8;
+            g = 0.8;
+            b = 0.8;
 
-                if (app == null || string.IsNullOrEmpty(targetName))
-                        return false;
-
-                try
-                {
-                        foreach (AssetValue av in app)
-                        {
-                                if (av == null)
-                                        continue;
-
-                                string avName = "";
-                                try { avName = av.Name; } catch { avName = ""; }
-
-                                if (string.IsNullOrEmpty(avName))
-                                        continue;
-
-                                if (!string.Equals(avName, targetName, StringComparison.OrdinalIgnoreCase))
-                                        continue;
-
-                                if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor)
-                                        continue;
-
-                                ColorAssetValue cav = av as ColorAssetValue;
-                                if (cav == null)
-                                        continue;
-
-                                Inventor.Color invCol = cav.Value as Inventor.Color;
-                                if (invCol == null)
-                                        continue;
-
-                                r = invCol.Red   / 255.0;
-                                g = invCol.Green / 255.0;
-                                b = invCol.Blue  / 255.0;
-
-                                DebugLog("MESH",
-                                        "TryGetColorFromNamedAssetValue('" + targetName +
-                                        "'): RGB=(" +
-                                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                        b.ToString("F3", CultureInfo.InvariantCulture) + ")");
-                                return true;
-                        }
-                }
-                catch
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromNamedAssetValue: error buscando '" + targetName + "'.");
-                }
-
+            if (app == null || string.IsNullOrEmpty(targetName))
                 return false;
+
+            try
+            {
+                foreach (AssetValue av in app)
+                {
+                    if (av == null)
+                        continue;
+
+                    string avName = "";
+                    try { avName = av.Name; } catch { avName = ""; }
+
+                    if (string.IsNullOrEmpty(avName))
+                        continue;
+
+                    if (!string.Equals(avName, targetName, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor)
+                        continue;
+
+                    ColorAssetValue cav = av as ColorAssetValue;
+                    if (cav == null)
+                        continue;
+
+                    Inventor.Color invCol = cav.Value as Inventor.Color;
+                    if (invCol == null)
+                        continue;
+
+                    r = invCol.Red / 255.0;
+                    g = invCol.Green / 255.0;
+                    b = invCol.Blue / 255.0;
+
+                    DebugLog("MESH",
+                            "TryGetColorFromNamedAssetValue('" + targetName +
+                            "'): RGB=(" +
+                            r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                            g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                            b.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                    return true;
+                }
+            }
+            catch
+            {
+                DebugLog("MESH",
+                        "TryGetColorFromNamedAssetValue: error buscando '" + targetName + "'.");
+            }
+
+            return false;
         }
 
         // =====================================================
         //  Helper central: PRIORIDAD de color dentro de un Asset
-        //
-        //  Orden final:
-        //    1) plasticvinyl_color   (plásticos LEGO, vinilos, etc.)
-        //    2) wallpaint_color
-        //    3) common_Tint_color    (muchos materiales "Suave - Rojo")
-        //    4) generic_diffuse
-        //    5) primer AssetValue COLOR que exista
         // =====================================================
         private static bool TryGetColorFromAssetWithPriority(
                 Asset app,
@@ -1162,141 +1126,134 @@ namespace URDFConverterAddIn
                 out double g,
                 out double b)
         {
-                // Por defecto gris
-                r = 0.8;
-                g = 0.8;
-                b = 0.8;
+            // Por defecto gris
+            r = 0.8;
+            g = 0.8;
+            b = 0.8;
 
-                if (app == null)
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: " + ownerKind +
-                                "='" + ownerName + "' sin Asset, usando gris 0.8.");
-                        return false;
-                }
-
-                // Log completo (para debug y para ver plasticvinyl, wallpaint, common_tint, etc.)
-                LogAssetInfo(ownerKind, ownerName, app);
-
-                // 1) PRIORIDAD MÁXIMA: plasticvinyl_color  (carrito LEGO rojo)
-                if (TryGetColorFromNamedAssetValue(app, "plasticvinyl_color", out r, out g, out b))
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: usando plasticvinyl_color para " +
-                                ownerKind + "='" + ownerName + "'.");
-                        return true;
-                }
-
-                // 2) wallpaint_color
-                if (TryGetColorFromNamedAssetValue(app, "wallpaint_color", out r, out g, out b))
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: usando wallpaint_color para " +
-                                ownerKind + "='" + ownerName + "'.");
-                        return true;
-                }
-
-                // 3) common_Tint_color (muchos materiales "Suave - Rojo" usan esto)
-                if (TryGetColorFromNamedAssetValue(app, "common_Tint_color", out r, out g, out b))
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: usando common_Tint_color para " +
-                                ownerKind + "='" + ownerName + "'.");
-                        return true;
-                }
-
-                // 4) generic_diffuse, si existe
-                try
-                {
-                        AssetValue avDif = app["generic_diffuse"];
-                        if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
-                        {
-                                ColorAssetValue difCav = avDif as ColorAssetValue;
-                                if (difCav != null)
-                                {
-                                        Inventor.Color invCol1 = difCav.Value as Inventor.Color;
-                                        if (invCol1 != null)
-                                        {
-                                                r = invCol1.Red   / 255.0;
-                                                g = invCol1.Green / 255.0;
-                                                b = invCol1.Blue  / 255.0;
-
-                                                DebugLog("MESH",
-                                                        "TryGetColorFromAssetWithPriority: " + ownerKind +
-                                                        "='" + ownerName + "', generic_diffuse=(" +
-                                                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                                        b.ToString("F3", CultureInfo.InvariantCulture) + ")");
-                                                return true;
-                                        }
-                                }
-                        }
-                }
-                catch
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: " + ownerKind +
-                                "='" + ownerName + "' sin generic_diffuse válido.");
-                }
-
-                // 5) Fallback: primer AssetValue COLOR que exista
-                try
-                {
-                        foreach (AssetValue av in app)
-                        {
-                                if (av == null)
-                                        continue;
-
-                                if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
-                                {
-                                        ColorAssetValue cav = av as ColorAssetValue;
-                                        if (cav != null)
-                                        {
-                                                Inventor.Color invCol = cav.Value as Inventor.Color;
-                                                if (invCol != null)
-                                                {
-                                                        r = invCol.Red   / 255.0;
-                                                        g = invCol.Green / 255.0;
-                                                        b = invCol.Blue  / 255.0;
-
-                                                        DebugLog("MESH",
-                                                                "TryGetColorFromAssetWithPriority: " + ownerKind +
-                                                                "='" + ownerName +
-                                                                "', usando primer AssetValue COLOR Name='" +
-                                                                av.Name + "', DisplayName='" + av.DisplayName + "', RGB=(" +
-                                                                r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                                                g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                                                b.ToString("F3", CultureInfo.InvariantCulture) + ")");
-                                                        return true;
-                                                }
-                                        }
-                                }
-                        }
-                }
-                catch
-                {
-                        DebugLog("MESH",
-                                "TryGetColorFromAssetWithPriority: error buscando AssetValue COLOR en " +
-                                ownerKind + "='" + ownerName + "'.");
-                }
-
+            if (app == null)
+            {
                 DebugLog("MESH",
-                        "TryGetColorFromAssetWithPriority: sin color, usando gris 0.8 para " +
-                        ownerKind + "='" + ownerName + "'.");
+                        "TryGetColorFromAssetWithPriority: " + ownerKind +
+                        "='" + ownerName + "' sin Asset, usando gris 0.8.");
                 return false;
+            }
+
+            // Log completo
+            LogAssetInfo(ownerKind, ownerName, app);
+
+            // 1) plasticvinyl_color
+            if (TryGetColorFromNamedAssetValue(app, "plasticvinyl_color", out r, out g, out b))
+            {
+                DebugLog("MESH",
+                        "TryGetColorFromAssetWithPriority: usando plasticvinyl_color para " +
+                        ownerKind + "='" + ownerName + "'.");
+                return true;
+            }
+
+            // 2) wallpaint_color
+            if (TryGetColorFromNamedAssetValue(app, "wallpaint_color", out r, out g, out b))
+            {
+                DebugLog("MESH",
+                        "TryGetColorFromAssetWithPriority: usando wallpaint_color para " +
+                        ownerKind + "='" + ownerName + "'.");
+                return true;
+            }
+
+            // 3) common_Tint_color
+            if (TryGetColorFromNamedAssetValue(app, "common_Tint_color", out r, out g, out b))
+            {
+                DebugLog("MESH",
+                        "TryGetColorFromAssetWithPriority: usando common_Tint_color para " +
+                        ownerKind + "='" + ownerName + "'.");
+                return true;
+            }
+
+            // 4) generic_diffuse
+            try
+            {
+                AssetValue avDif = app["generic_diffuse"];
+                if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                {
+                    ColorAssetValue difCav = avDif as ColorAssetValue;
+                    if (difCav != null)
+                    {
+                        Inventor.Color invCol1 = difCav.Value as Inventor.Color;
+                        if (invCol1 != null)
+                        {
+                            r = invCol1.Red / 255.0;
+                            g = invCol1.Green / 255.0;
+                            b = invCol1.Blue / 255.0;
+
+                            DebugLog("MESH",
+                                    "TryGetColorFromAssetWithPriority: " + ownerKind +
+                                    "='" + ownerName + "', generic_diffuse=(" +
+                                    r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                    g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                    b.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                DebugLog("MESH",
+                        "TryGetColorFromAssetWithPriority: " + ownerKind +
+                        "='" + ownerName + "' sin generic_diffuse válido.");
+            }
+
+            // 5) primer AssetValue COLOR
+            try
+            {
+                foreach (AssetValue av in app)
+                {
+                    if (av == null)
+                        continue;
+
+                    if (av.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                    {
+                        ColorAssetValue cav = av as ColorAssetValue;
+                        if (cav != null)
+                        {
+                            Inventor.Color invCol = cav.Value as Inventor.Color;
+                            if (invCol != null)
+                            {
+                                r = invCol.Red / 255.0;
+                                g = invCol.Green / 255.0;
+                                b = invCol.Blue / 255.0;
+
+                                DebugLog("MESH",
+                                        "TryGetColorFromAssetWithPriority: " + ownerKind +
+                                        "='" + ownerName +
+                                        "', usando primer AssetValue COLOR Name='" +
+                                        av.Name + "', DisplayName='" + av.DisplayName + "', RGB=(" +
+                                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                                        b.ToString("F3", CultureInfo.InvariantCulture) + ")");
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                DebugLog("MESH",
+                        "TryGetColorFromAssetWithPriority: error buscando AssetValue COLOR en " +
+                        ownerKind + "='" + ownerName + "'.");
+            }
+
+            DebugLog("MESH",
+                    "TryGetColorFromAssetWithPriority: sin color, usando gris 0.8 para " +
+                    ownerKind + "='" + ownerName + "'.");
+            return false;
         }
 
         // =====================================================
         //  COLOR (Body y Face) + Fallback a Occurrence.Appearance
-        //
-        //  Prioridad final:
-        //    1) Face.Appearance (usa la prioridad de Asset: plasticvinyl → wallpaint → common_Tint → generic_diffuse → primer COLOR)
-        //    2) Body.Appearance (misma prioridad interna)
-        //    3) Occurrence.Appearance (misma prioridad interna)
-        //    4) Gris (0.8, 0.8, 0.8)
         // =====================================================
 
-        // Versión extendida con contexto de Occurrence
         private static bool TryGetBodyColor(
                 SurfaceBody body,
                 string ownerNameForLog,
@@ -1305,178 +1262,161 @@ namespace URDFConverterAddIn
                 out double g,
                 out double b)
         {
-                r = 0.8;
-                g = 0.8;
-                b = 0.8;
+            r = 0.8;
+            g = 0.8;
+            b = 0.8;
 
-                if (body == null)
+            if (body == null)
+            {
+                DebugLog("MESH", "TryGetBodyColor: body == null, usando gris 0.8.");
+                return false;
+            }
+
+            string bodyName = "(sin nombre)";
+            try
+            {
+                if (!string.IsNullOrEmpty(body.Name))
+                    bodyName = body.Name;
+            }
+            catch { }
+
+            if (string.IsNullOrEmpty(ownerNameForLog))
+                ownerNameForLog = bodyName;
+
+            // 1) Body.Appearance
+            try
+            {
+                Asset appBody = null;
+                try { appBody = body.Appearance; }
+                catch { appBody = null; }
+
+                if (appBody != null &&
+                    TryGetColorFromAssetWithPriority(appBody, "Body", ownerNameForLog, out r, out g, out b))
                 {
-                        DebugLog("MESH", "TryGetBodyColor: body == null, usando gris 0.8.");
-                        return false;
+                    return true;
                 }
+            }
+            catch
+            {
+                DebugLog("MESH",
+                        "TryGetBodyColor: excepción leyendo Body.Appearance, se probará Occurrence.");
+            }
 
-                string bodyName = "(sin nombre)";
+            // 2) Fallback: Occurrence.Appearance
+            if (occAppearance != null)
+            {
+                if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
+                {
+                    DebugLog("MESH",
+                            "TryGetBodyColor: usando Occurrence.Appearance para body '" +
+                            ownerNameForLog + "'.");
+                    return true;
+                }
+            }
+
+            DebugLog("MESH",
+                    "TryGetBodyColor: sin color detectado, usando gris 0.8 para body '" +
+                    ownerNameForLog + "'.");
+            return false;
+        }
+
+        private static bool TryGetBodyColor(
+                SurfaceBody body,
+                out double r,
+                out double g,
+                out double b)
+        {
+            return TryGetBodyColor(body,
+                    (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
+                    null,
+                    out r, out g, out b);
+        }
+
+        private static bool TryGetFaceColor(
+                Inventor.Face face,
+                SurfaceBody parentBody,
+                string ownerNameForLog,
+                Asset occAppearance,
+                out double r,
+                out double g,
+                out double b)
+        {
+            r = 0.8;
+            g = 0.8;
+            b = 0.8;
+
+            if (string.IsNullOrEmpty(ownerNameForLog))
+                ownerNameForLog = "(Face)";
+
+            // 1) Face.Appearance
+            if (face != null)
+            {
                 try
                 {
-                        if (!string.IsNullOrEmpty(body.Name))
-                                bodyName = body.Name;
-                }
-                catch { }
+                    Asset app = null;
+                    try { app = face.Appearance; }
+                    catch { app = null; }
 
-                if (string.IsNullOrEmpty(ownerNameForLog))
-                        ownerNameForLog = bodyName;
-
-                // 1) Body.Appearance
-                try
-                {
-                        Asset appBody = null;
+                    if (app != null)
+                    {
+                        string faceId = ownerNameForLog;
                         try
                         {
-                                appBody = body.Appearance;
+                            if (face.SurfaceBody != null && !string.IsNullOrEmpty(face.SurfaceBody.Name))
+                                faceId = face.SurfaceBody.Name;
                         }
-                        catch
-                        {
-                                appBody = null;
-                        }
+                        catch { }
 
-                        if (appBody != null &&
-                                TryGetColorFromAssetWithPriority(appBody, "Body", ownerNameForLog, out r, out g, out b))
+                        if (TryGetColorFromAssetWithPriority(app, "Face", faceId, out r, out g, out b))
                         {
-                                return true;
+                            DebugLog("MESH",
+                                    "TryGetFaceColor: usando Face.Appearance para '" + faceId + "'.");
+                            return true;
                         }
+                    }
                 }
                 catch
                 {
-                        DebugLog("MESH",
-                                "TryGetBodyColor: excepción leyendo Body.Appearance, se probará Occurrence.");
+                    DebugLog("MESH",
+                            "TryGetFaceColor: excepción leyendo Face.Appearance, se probará Body/Occurrence.");
                 }
+            }
+            else
+            {
+                DebugLog("MESH", "TryGetFaceColor: face == null, se pasa directamente a Body/Occurrence.");
+            }
 
-                // 2) Fallback: Occurrence.Appearance, si nos la pasan
+            // 2) Fallback: Body/Occurrence
+            if (parentBody != null)
+            {
+                if (TryGetBodyColor(parentBody, ownerNameForLog, occAppearance, out r, out g, out b))
+                {
+                    DebugLog("MESH",
+                            "TryGetFaceColor: usando color de Body/Occurrence para '" +
+                            ownerNameForLog + "'.");
+                    return true;
+                }
+            }
+            else
+            {
                 if (occAppearance != null)
                 {
-                        if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
-                        {
-                                DebugLog("MESH",
-                                        "TryGetBodyColor: usando Occurrence.Appearance para body '" +
-                                        ownerNameForLog + "'.");
-                                return true;
-                        }
+                    if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
+                    {
+                        DebugLog("MESH",
+                                "TryGetFaceColor: usando Occurrence.Appearance sin body para '" +
+                                ownerNameForLog + "'.");
+                        return true;
+                    }
                 }
+            }
 
-                DebugLog("MESH",
-                        "TryGetBodyColor: sin color detectado, usando gris 0.8 para body '" +
-                        ownerNameForLog + "'.");
-                return false;
+            DebugLog("MESH",
+                    "TryGetFaceColor: sin color específico, usando gris 0.8 para '" +
+                    ownerNameForLog + "'.");
+            return false;
         }
 
-        // Wrapper antiguo (sin Occurrence) para compatibilidad
-        private static bool TryGetBodyColor(
-                SurfaceBody body,
-                out double r,
-                out double g,
-                out double b)
-        {
-                return TryGetBodyColor(body,
-                        (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
-                        null,
-                        out r, out g, out b);
-        }
-
-        // Color a nivel de CARA con fallback a Body y Occurrence
-        private static bool TryGetFaceColor(
-                Inventor.Face face,
-                SurfaceBody parentBody,
-                string ownerNameForLog,
-                Asset occAppearance,
-                out double r,
-                out double g,
-                out double b)
-        {
-                // Por defecto gris claro
-                r = 0.8;
-                g = 0.8;
-                b = 0.8;
-
-                if (string.IsNullOrEmpty(ownerNameForLog))
-                        ownerNameForLog = "(Face)";
-
-                // 1) Si hay cara, intentar Face.Appearance
-                if (face != null)
-                {
-                        try
-                        {
-                                Asset app = null;
-                                try
-                                {
-                                        app = face.Appearance;
-                                }
-                                catch
-                                {
-                                        app = null;
-                                }
-
-                                if (app != null)
-                                {
-                                        string faceId = ownerNameForLog;
-                                        try
-                                        {
-                                                if (face.SurfaceBody != null && !string.IsNullOrEmpty(face.SurfaceBody.Name))
-                                                        faceId = face.SurfaceBody.Name;
-                                        }
-                                        catch { }
-
-                                        if (TryGetColorFromAssetWithPriority(app, "Face", faceId, out r, out g, out b))
-                                        {
-                                                DebugLog("MESH",
-                                                        "TryGetFaceColor: usando Face.Appearance para '" + faceId + "'.");
-                                                return true;
-                                        }
-                                }
-                        }
-                        catch
-                        {
-                                DebugLog("MESH",
-                                        "TryGetFaceColor: excepción leyendo Face.Appearance, se probará Body/Occurrence.");
-                        }
-                }
-                else
-                {
-                        DebugLog("MESH", "TryGetFaceColor: face == null, se pasa directamente a Body/Occurrence.");
-                }
-
-                // 2) Fallback: Body (que internamente ya prueba Body.Appearance y luego Occurrence.Appearance)
-                if (parentBody != null)
-                {
-                        if (TryGetBodyColor(parentBody, ownerNameForLog, occAppearance, out r, out g, out b))
-                        {
-                                DebugLog("MESH",
-                                        "TryGetFaceColor: usando color de Body/Occurrence para '" +
-                                        ownerNameForLog + "'.");
-                                return true;
-                        }
-                }
-                else
-                {
-                        // 3) Si no hay body pero sí Occurrence, usar Occurrence directamente
-                        if (occAppearance != null)
-                        {
-                                if (TryGetColorFromAssetWithPriority(occAppearance, "Occurrence", ownerNameForLog, out r, out g, out b))
-                                {
-                                        DebugLog("MESH",
-                                                "TryGetFaceColor: usando Occurrence.Appearance sin body para '" +
-                                                ownerNameForLog + "'.");
-                                        return true;
-                                }
-                        }
-                }
-
-                DebugLog("MESH",
-                        "TryGetFaceColor: sin color específico, usando gris 0.8 para '" +
-                        ownerNameForLog + "'.");
-                return false;
-        }
-
-        // Wrapper antiguo (sin Occurrence) para compatibilidad
         private static bool TryGetFaceColor(
                 Inventor.Face face,
                 SurfaceBody parentBody,
@@ -1484,19 +1424,19 @@ namespace URDFConverterAddIn
                 out double g,
                 out double b)
         {
-                return TryGetFaceColor(
-                        face,
-                        parentBody,
-                        (parentBody != null && !string.IsNullOrEmpty(parentBody.Name)) ? parentBody.Name : "(body)",
-                        null,
-                        out r, out g, out b);
+            return TryGetFaceColor(
+                    face,
+                    parentBody,
+                    (parentBody != null && !string.IsNullOrEmpty(parentBody.Name)) ? parentBody.Name : "(body)",
+                    null,
+                    out r, out g, out b);
         }
 
         private static int ClampToByte(double v)
         {
-                if (v < 0.0)   return 0;
-                if (v > 255.0) return 255;
-                return (int)Math.Round(v);
+            if (v < 0.0) return 0;
+            if (v > 255.0) return 255;
+            return (int)Math.Round(v);
         }
 
         private static void WriteSolidColorPng(
@@ -1506,32 +1446,32 @@ namespace URDFConverterAddIn
                 double b,
                 int size)
         {
-                DebugLog("MESH",
-                        "WriteSolidColorPng: path='" + path +
-                        "', color=(" +
-                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        b.ToString("F3", CultureInfo.InvariantCulture) + "), size=" +
-                        size.ToString(CultureInfo.InvariantCulture));
+            DebugLog("MESH",
+                    "WriteSolidColorPng: path='" + path +
+                    "', color=(" +
+                    r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                    g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                    b.ToString("F3", CultureInfo.InvariantCulture) + "), size=" +
+                    size.ToString(CultureInfo.InvariantCulture));
 
-                using (Bitmap bmp = new Bitmap(size, size))
+            using (Bitmap bmp = new Bitmap(size, size))
+            {
+                System.Drawing.Color col = System.Drawing.Color.FromArgb(
+                        255,
+                        ClampToByte(r * 255.0),
+                        ClampToByte(g * 255.0),
+                        ClampToByte(b * 255.0));
+
+                for (int y = 0; y < size; y++)
                 {
-                        System.Drawing.Color col = System.Drawing.Color.FromArgb(
-                                255,
-                                ClampToByte(r * 255.0),
-                                ClampToByte(g * 255.0),
-                                ClampToByte(b * 255.0));
-
-                        for (int y = 0; y < size; y++)
-                        {
-                                for (int x = 0; x < size; x++)
-                                {
-                                        bmp.SetPixel(x, y, col);
-                                }
-                        }
-
-                        bmp.Save(path, ImageFormat.Png);
+                    for (int x = 0; x < size; x++)
+                    {
+                        bmp.SetPixel(x, y, col);
+                    }
                 }
+
+                bmp.Save(path, ImageFormat.Png);
+            }
         }
 
         private static void WriteAtlasSingleColorPng(
@@ -1543,40 +1483,39 @@ namespace URDFConverterAddIn
                 int cellsY,
                 int cellSize)
         {
-                int width  = cellsX * cellSize;
-                int height = cellsY * cellSize;
+            int width = cellsX * cellSize;
+            int height = cellsY * cellSize;
 
-                DebugLog("MESH",
-                        "WriteAtlasSingleColorPng: path='" + path +
-                        "', color=(" +
-                        r.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        g.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                        b.ToString("F3", CultureInfo.InvariantCulture) + "), cellsX=" +
-                        cellsX.ToString(CultureInfo.InvariantCulture) + ", cellsY=" +
-                        cellsY.ToString(CultureInfo.InvariantCulture) + ", cellSize=" +
-                        cellSize.ToString(CultureInfo.InvariantCulture));
+            DebugLog("MESH",
+                    "WriteAtlasSingleColorPng: path='" + path +
+                    "', color=(" +
+                    r.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                    g.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                    b.ToString("F3", CultureInfo.InvariantCulture) + "), cellsX=" +
+                    cellsX.ToString(CultureInfo.InvariantCulture) + ", cellsY=" +
+                    cellsY.ToString(CultureInfo.InvariantCulture) + ", cellSize=" +
+                    cellSize.ToString(CultureInfo.InvariantCulture));
 
-                using (Bitmap bmp = new Bitmap(width, height))
+            using (Bitmap bmp = new Bitmap(width, height))
+            {
+                System.Drawing.Color col = System.Drawing.Color.FromArgb(
+                        255,
+                        ClampToByte(r * 255.0),
+                        ClampToByte(g * 255.0),
+                        ClampToByte(b * 255.0));
+
+                for (int y = 0; y < height; y++)
                 {
-                        System.Drawing.Color col = System.Drawing.Color.FromArgb(
-                                255,
-                                ClampToByte(r * 255.0),
-                                ClampToByte(g * 255.0),
-                                ClampToByte(b * 255.0));
-
-                        for (int y = 0; y < height; y++)
-                        {
-                                for (int x = 0; x < width; x++)
-                                {
-                                        bmp.SetPixel(x, y, col);
-                                }
-                        }
-
-                        bmp.Save(path, ImageFormat.Png);
+                    for (int x = 0; x < width; x++)
+                    {
+                        bmp.SetPixel(x, y, col);
+                    }
                 }
+
+                bmp.Save(path, ImageFormat.Png);
+            }
         }
 
-        // Core del atlas con soporte para Occurrence.Appearance
         private static void WriteBodyFaceColorAtlasCore(
                 SurfaceBody body,
                 string ownerNameForLog,
@@ -1584,154 +1523,138 @@ namespace URDFConverterAddIn
                 string path,
                 int cellSize)
         {
-                if (body == null)
-                {
-                        DebugLog("MESH",
-                                "WriteBodyFaceColorAtlasCore: body == null, escribiendo PNG gris sólido.");
-                        WriteSolidColorPng(path, 0.8, 0.8, 0.8, cellSize);
-                        return;
-                }
-
-                if (string.IsNullOrEmpty(ownerNameForLog))
-                        ownerNameForLog = body.Name ?? "(body)";
-
-                double bodyR, bodyG, bodyB;
-                if (!TryGetBodyColor(body, ownerNameForLog, occAppearance, out bodyR, out bodyG, out bodyB))
-                {
-                        bodyR = bodyG = bodyB = 0.8;
-                }
-
-                Faces faces = null;
-                try
-                {
-                        faces = body.Faces;
-                }
-                catch
-                {
-                        faces = null;
-                }
-
-                int faceCount = (faces != null) ? faces.Count : 0;
-
+            if (body == null)
+            {
                 DebugLog("MESH",
-                        "WriteBodyFaceColorAtlasCore: path='" + path +
-                        "', faceCount=" + faceCount.ToString(CultureInfo.InvariantCulture) +
-                        ", owner='" + ownerNameForLog + "'");
+                        "WriteBodyFaceColorAtlasCore: body == null, escribiendo PNG gris sólido.");
+                WriteSolidColorPng(path, 0.8, 0.8, 0.8, cellSize);
+                return;
+            }
 
-                if (faceCount <= 0)
-                {
-                        DebugLog("MESH",
-                                "WriteBodyFaceColorAtlasCore: faceCount <= 0, usando atlas monocromático.");
-                        WriteAtlasSingleColorPng(path, bodyR, bodyG, bodyB, 1, 1, cellSize);
-                        return;
-                }
+            if (string.IsNullOrEmpty(ownerNameForLog))
+                ownerNameForLog = body.Name ?? "(body)";
 
-                int cellsX = (int)Math.Ceiling(Math.Sqrt((double)faceCount));
-                if (cellsX < 1) cellsX = 1;
-                int cellsY = (int)Math.Ceiling((double)faceCount / (double)cellsX);
-                if (cellsY < 1) cellsY = 1;
+            double bodyR, bodyG, bodyB;
+            if (!TryGetBodyColor(body, ownerNameForLog, occAppearance, out bodyR, out bodyG, out bodyB))
+            {
+                bodyR = bodyG = bodyB = 0.8;
+            }
 
-                int width  = cellsX * cellSize;
-                int height = cellsY * cellSize;
+            Faces faces = null;
+            try { faces = body.Faces; }
+            catch { faces = null; }
 
+            int faceCount = (faces != null) ? faces.Count : 0;
+
+            DebugLog("MESH",
+                    "WriteBodyFaceColorAtlasCore: path='" + path +
+                    "', faceCount=" + faceCount.ToString(CultureInfo.InvariantCulture) +
+                    ", owner='" + ownerNameForLog + "'");
+
+            if (faceCount <= 0)
+            {
                 DebugLog("MESH",
-                        "WriteBodyFaceColorAtlasCore: cellsX=" +
-                        cellsX.ToString(CultureInfo.InvariantCulture) +
-                        ", cellsY=" +
-                        cellsY.ToString(CultureInfo.InvariantCulture) +
-                        ", cellSize=" +
-                        cellSize.ToString(CultureInfo.InvariantCulture) +
-                        ", width=" +
-                        width.ToString(CultureInfo.InvariantCulture) +
-                        ", height=" +
-                        height.ToString(CultureInfo.InvariantCulture));
+                        "WriteBodyFaceColorAtlasCore: faceCount <= 0, usando atlas monocromático.");
+                WriteAtlasSingleColorPng(path, bodyR, bodyG, bodyB, 1, 1, cellSize);
+                return;
+            }
 
-                using (Bitmap bmp = new Bitmap(width, height))
+            int cellsX = (int)Math.Ceiling(Math.Sqrt((double)faceCount));
+            if (cellsX < 1) cellsX = 1;
+            int cellsY = (int)Math.Ceiling((double)faceCount / (double)cellsX);
+            if (cellsY < 1) cellsY = 1;
+
+            int width = cellsX * cellSize;
+            int height = cellsY * cellSize;
+
+            DebugLog("MESH",
+                    "WriteBodyFaceColorAtlasCore: cellsX=" +
+                    cellsX.ToString(CultureInfo.InvariantCulture) +
+                    ", cellsY=" +
+                    cellsY.ToString(CultureInfo.InvariantCulture) +
+                    ", cellSize=" +
+                    cellSize.ToString(CultureInfo.InvariantCulture) +
+                    ", width=" +
+                    width.ToString(CultureInfo.InvariantCulture) +
+                    ", height=" +
+                    height.ToString(CultureInfo.InvariantCulture));
+
+            using (Bitmap bmp = new Bitmap(width, height))
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
                 {
-                        using (Graphics g = Graphics.FromImage(bmp))
-                        {
-                                System.Drawing.Color bgCol = System.Drawing.Color.FromArgb(
-                                        255,
-                                        ClampToByte(bodyR * 255.0),
-                                        ClampToByte(bodyG * 255.0),
-                                        ClampToByte(bodyB * 255.0));
-                                g.Clear(bgCol);
-                        }
-
-                        for (int fi = 0; fi < faceCount; fi++)
-                        {
-                                Inventor.Face f = null;
-                                try
-                                {
-                                        f = faces[fi + 1]; // Faces es 1-based
-                                }
-                                catch
-                                {
-                                        f = null;
-                                }
-
-                                double fr, fg, fb;
-                                if (!TryGetFaceColor(f, body, ownerNameForLog, occAppearance, out fr, out fg, out fb))
-                                {
-                                        fr = bodyR;
-                                        fg = bodyG;
-                                        fb = bodyB;
-                                }
-
-                                System.Drawing.Color faceCol = System.Drawing.Color.FromArgb(
-                                        255,
-                                        ClampToByte(fr * 255.0),
-                                        ClampToByte(fg * 255.0),
-                                        ClampToByte(fb * 255.0));
-
-                                int cellX = fi % cellsX;
-                                int cellY = fi / cellsX;
-
-                                int startX = cellX * cellSize;
-                                int startY = cellY * cellSize;
-
-                                DebugLog("MESH",
-                                        "WriteBodyFaceColorAtlasCore: faceIndex=" +
-                                        fi.ToString(CultureInfo.InvariantCulture) +
-                                        ", cell=(" +
-                                        cellX.ToString(CultureInfo.InvariantCulture) + "," +
-                                        cellY.ToString(CultureInfo.InvariantCulture) + "), color=(" +
-                                        fr.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                        fg.ToString("F3", CultureInfo.InvariantCulture) + "," +
-                                        fb.ToString("F3", CultureInfo.InvariantCulture) + ")");
-
-                                for (int y = startY; y < startY + cellSize && y < height; y++)
-                                {
-                                        for (int x = startX; x < startX + cellSize && x < width; x++)
-                                        {
-                                                bmp.SetPixel(x, y, faceCol);
-                                        }
-                                }
-                        }
-
-                        bmp.Save(path, ImageFormat.Png);
+                    System.Drawing.Color bgCol = System.Drawing.Color.FromArgb(
+                            255,
+                            ClampToByte(bodyR * 255.0),
+                            ClampToByte(bodyG * 255.0),
+                            ClampToByte(bodyB * 255.0));
+                    g.Clear(bgCol);
                 }
 
-                DebugLog(
-                        "MESH",
-                        "WriteBodyFaceColorAtlasCore: atlas escrito OK en '" + path + "'");
+                for (int fi = 0; fi < faceCount; fi++)
+                {
+                    Inventor.Face f = null;
+                    try { f = faces[fi + 1]; }
+                    catch { f = null; }
+
+                    double fr, fg, fb;
+                    if (!TryGetFaceColor(f, body, ownerNameForLog, occAppearance, out fr, out fg, out fb))
+                    {
+                        fr = bodyR;
+                        fg = bodyG;
+                        fb = bodyB;
+                    }
+
+                    System.Drawing.Color faceCol = System.Drawing.Color.FromArgb(
+                            255,
+                            ClampToByte(fr * 255.0),
+                            ClampToByte(fg * 255.0),
+                            ClampToByte(fb * 255.0));
+
+                    int cellX = fi % cellsX;
+                    int cellY = fi / cellsX;
+
+                    int startX = cellX * cellSize;
+                    int startY = cellY * cellSize;
+
+                    DebugLog("MESH",
+                            "WriteBodyFaceColorAtlasCore: faceIndex=" +
+                            fi.ToString(CultureInfo.InvariantCulture) +
+                            ", cell=(" +
+                            cellX.ToString(CultureInfo.InvariantCulture) + "," +
+                            cellY.ToString(CultureInfo.InvariantCulture) + "), color=(" +
+                            fr.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                            fg.ToString("F3", CultureInfo.InvariantCulture) + "," +
+                            fb.ToString("F3", CultureInfo.InvariantCulture) + ")");
+
+                    for (int y = startY; y < startY + cellSize && y < height; y++)
+                    {
+                        for (int x = startX; x < startX + cellSize && x < width; x++)
+                        {
+                            bmp.SetPixel(x, y, faceCol);
+                        }
+                    }
+                }
+
+                bmp.Save(path, ImageFormat.Png);
+            }
+
+            DebugLog("MESH", "WriteBodyFaceColorAtlasCore: atlas escrito OK en '" + path + "'");
         }
 
-        // Wrapper antiguo (sin Occurrence) → Part .ipt
         private static void WriteBodyFaceColorAtlas(
                 SurfaceBody body,
                 string path,
                 int cellSize)
         {
-                WriteBodyFaceColorAtlasCore(
-                        body,
-                        (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
-                        null,
-                        path,
-                        cellSize);
+            WriteBodyFaceColorAtlasCore(
+                    body,
+                    (body != null && !string.IsNullOrEmpty(body.Name)) ? body.Name : "(body)",
+                    null,
+                    path,
+                    cellSize);
         }
 
-        // Wrapper nuevo con Occurrence.Appearance → Assembly .iam
         private static void WriteBodyFaceColorAtlas(
                 SurfaceBody body,
                 string ownerNameForLog,
@@ -1739,28 +1662,13 @@ namespace URDFConverterAddIn
                 string path,
                 int cellSize)
         {
-                WriteBodyFaceColorAtlasCore(
-                        body,
-                        ownerNameForLog,
-                        occAppearance,
-                        path,
-                        cellSize);
+            WriteBodyFaceColorAtlasCore(
+                    body,
+                    ownerNameForLog,
+                    occAppearance,
+                    path,
+                    cellSize);
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         // =====================================================
         //  EXPORT GEOMETRY + TEXTURAS (PNG/ATLAS) POR .DAE
@@ -1863,8 +1771,8 @@ namespace URDFConverterAddIn
                     continue;
                 }
 
-                string daeName  = linkName + ".dae";
-                string daePath  = IOPath.Combine(meshesDir, daeName);
+                string daeName = linkName + ".dae";
+                string daePath = IOPath.Combine(meshesDir, daeName);
 
                 DebugLog("MESH",
                     "ExportPartGeometryToDae: escribiendo DAE='" + daePath +
@@ -1889,14 +1797,12 @@ namespace URDFConverterAddIn
 
                 if (_meshQualityMode == "low")
                 {
-                    // VLQ → PNG sólido
                     WriteSolidColorPng(pngPath, r, g, b, 32);
                     DebugLog("MESH",
                         "ExportPartGeometryToDae: LOW PNG='" + pngPath + "'");
                 }
                 else if (_meshQualityMode == "high")
                 {
-                    // DisplayMesh → atlas por cara
                     WriteBodyFaceColorAtlas(body, linkName, null, pngPath, 32);
                     DebugLog("MESH",
                         "ExportPartGeometryToDae: HIGH ATLAS-PNG='" + pngPath + "'");
@@ -1932,10 +1838,7 @@ namespace URDFConverterAddIn
                 return;
             }
 
-            // 🔧 Ajustar tipos de JOINT según constraints del .iam
-            //    - InsertConstraint    → continuous (ruedas/ejes)
-            //    - AngleConstraint     → revolute  (juntas rotacionales con ángulo)
-            //    - TransitionalConstraint → prismatic (desplazamientos lineales)
+            // 🔧 Ajustar tipos de JOINT + AXIS (robusto)
             UpdateJointTypesFromConstraints(asmDoc, robot);
 
             AssemblyComponentDefinition asmDef = asmDoc.ComponentDefinition;
@@ -1968,23 +1871,17 @@ namespace URDFConverterAddIn
                         continue;
                     }
 
-                    string rawName  = occ.Name;
+                    string rawName = occ.Name;
                     string safeName = MakeSafeName(rawName);
 
                     string baseLinkName = "link_" +
                                           occIndex.ToString(CultureInfo.InvariantCulture) +
                                           "_" + safeName;
 
-                    // Apariencia a nivel de OCCURRENCE (para overrides de color en .iam)
+                    // Apariencia a nivel de OCCURRENCE
                     Asset occAppearance = null;
-                    try
-                    {
-                        occAppearance = occ.Appearance;
-                    }
-                    catch
-                    {
-                        occAppearance = null;
-                    }
+                    try { occAppearance = occ.Appearance; }
+                    catch { occAppearance = null; }
 
                     List<SurfaceBody> bodies = new List<SurfaceBody>();
                     CollectSurfaceBodiesFromOccurrence(occ, bodies);
@@ -2074,10 +1971,6 @@ namespace URDFConverterAddIn
                             "' MeshFile='" + link.MeshFile + "'");
 
                         // ====== COLOR / TEXTURA PARA .IAM ======
-                        // Usamos prioridad:
-                        //   Face.Appearance → Body.Appearance → Occurrence.Appearance → gris
-                        // (la parte de Face vs Body vs Occurrence está dentro de TryGetFaceColor/TryGetBodyColor,
-                        //  y dentro de cada Asset: wallpaint_color → generic_diffuse → primer COLOR)
                         double r, g, b;
                         if (!TryGetBodyColor(body, rawName, occAppearance, out r, out g, out b))
                         {
@@ -2088,14 +1981,12 @@ namespace URDFConverterAddIn
 
                         if (_meshQualityMode == "low")
                         {
-                            // VLQ → PNG sólido del color efectivo de esta occurrence/body
                             WriteSolidColorPng(pngPath, r, g, b, 32);
                             DebugLog("MESH",
                                 "ExportAssemblyGeometryToDae: LOW PNG='" + pngPath + "'");
                         }
                         else if (_meshQualityMode == "high")
                         {
-                            // DisplayMesh → atlas por cara usando Face/Body/Occurrence
                             WriteBodyFaceColorAtlas(body, rawName, occAppearance, pngPath, 32);
                             DebugLog("MESH",
                                 "ExportAssemblyGeometryToDae: HIGH ATLAS-PNG='" + pngPath + "'");
@@ -2137,17 +2028,6 @@ namespace URDFConverterAddIn
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
         // -------------------------------------------------
         //  Buscar link por nombre
         // -------------------------------------------------
@@ -2183,7 +2063,12 @@ namespace URDFConverterAddIn
         }
 
         // -------------------------------------------------
-        //  Mapear AssemblyConstraints → tipos de JOINT URDF
+        //  Mapear AssemblyConstraints → tipos de JOINT URDF (ROBUSTO)
+        //
+        //  ✅ No asume que child = OccurrenceOne.
+        //  ✅ Detecta MateConstraint entre cilindros / workaxis / edge lineal → continuous.
+        //  ✅ Extrae eje REAL desde GeometryOne/GeometryTwo (en espacio del assembly).
+        //  ✅ Convierte axis(world) → axis(joint frame) usando la rotación de la occurrence del child.
         // -------------------------------------------------
         private static void UpdateJointTypesFromConstraints(
             AssemblyDocument asmDoc,
@@ -2214,9 +2099,13 @@ namespace URDFConverterAddIn
 
             ComponentOccurrencesEnumerator leafOccs = occs.AllLeafOccurrences;
 
-            // Mapeo robusto: ComponentOccurrence → nombre baseLink
+            // Mapeo robusto: ComponentOccurrence → baseLinkName
             Dictionary<ComponentOccurrence, string> occToBaseLink =
                 new Dictionary<ComponentOccurrence, string>();
+
+            // También guardamos la Matrix por occurrence para convertir axis→frame local
+            Dictionary<ComponentOccurrence, Matrix> occToMatrix =
+                new Dictionary<ComponentOccurrence, Matrix>();
 
             int occIndex = 0;
             foreach (ComponentOccurrence occ in leafOccs)
@@ -2235,7 +2124,7 @@ namespace URDFConverterAddIn
                         continue;
                     }
 
-                    string rawName  = occ.Name;
+                    string rawName = occ.Name;
                     string safeName = MakeSafeName(rawName);
 
                     string baseLinkName = "link_" +
@@ -2243,6 +2132,9 @@ namespace URDFConverterAddIn
                         "_" + safeName;
 
                     occToBaseLink[occ] = baseLinkName;
+
+                    try { occToMatrix[occ] = occ.Transformation; }
+                    catch { }
 
                     DebugLog("LINK",
                         "UpdateJointTypesFromConstraints: occIndex=" +
@@ -2263,14 +2155,8 @@ namespace URDFConverterAddIn
             }
 
             AssemblyConstraints constraints = null;
-            try
-            {
-                constraints = asmDef.Constraints;
-            }
-            catch
-            {
-                constraints = null;
-            }
+            try { constraints = asmDef.Constraints; }
+            catch { constraints = null; }
 
             if (constraints == null || constraints.Count == 0)
             {
@@ -2288,103 +2174,443 @@ namespace URDFConverterAddIn
                 if (ac == null)
                     continue;
 
-                ComponentOccurrence childOcc = null;
-                ComponentOccurrence parentOcc = null;
+                ComponentOccurrence o1 = null;
+                ComponentOccurrence o2 = null;
 
                 try
                 {
-                    // Convención simple: OccurrenceOne → CHILD, OccurrenceTwo → PARENT
-                    childOcc = ac.OccurrenceOne;
-                    parentOcc = ac.OccurrenceTwo;
+                    o1 = ac.OccurrenceOne;
+                    o2 = ac.OccurrenceTwo;
                 }
                 catch
                 {
-                    childOcc = null;
-                    parentOcc = null;
+                    o1 = null;
+                    o2 = null;
                 }
 
-                if (childOcc == null)
+                string link1 = null, link2 = null;
+                if (o1 != null) occToBaseLink.TryGetValue(o1, out link1);
+                if (o2 != null) occToBaseLink.TryGetValue(o2, out link2);
+
+                // Si no tenemos ninguno (no-leaf / suprimido), no podemos mapear
+                if (string.IsNullOrEmpty(link1) && string.IsNullOrEmpty(link2))
                     continue;
 
-                string baseLinkName;
-                if (!occToBaseLink.TryGetValue(childOcc, out baseLinkName))
+                // Elegir child robusto (NO asumir OccurrenceOne)
+                ComponentOccurrence childOcc = null;
+                ComponentOccurrence parentOcc = null;
+                string childLink = null;
+
+                bool g1 = false, g2 = false;
+                try { if (o1 != null) g1 = o1.Grounded; } catch { g1 = false; }
+                try { if (o2 != null) g2 = o2.Grounded; } catch { g2 = false; }
+
+                // Caso típico: uno grounded (parent) y el otro no (child)
+                if (!string.IsNullOrEmpty(link1) && !string.IsNullOrEmpty(link2))
                 {
-                    DebugLog("LINK",
-                        "UpdateJointTypesFromConstraints: constraint '" + ac.Name +
-                        "' usa occurrenceOne que no está en occToBaseLink (suprimido o no hoja).");
-                    continue;
+                    if (g1 && !g2)
+                    {
+                        parentOcc = o1;
+                        childOcc = o2;
+                        childLink = link2;
+                    }
+                    else if (g2 && !g1)
+                    {
+                        parentOcc = o2;
+                        childOcc = o1;
+                        childLink = link1;
+                    }
+                    else
+                    {
+                        // Si ambos grounded o ambos libres:
+                        // preferimos modificar el que todavía tenga joint FIXED (para no pisar un DOF ya asignado)
+                        UrdfJoint j1 = FindJointByChildLink(robot, link1);
+                        UrdfJoint j2 = FindJointByChildLink(robot, link2);
+
+                        bool j1Fixed = (j1 != null && string.Equals(j1.Type, "fixed", StringComparison.OrdinalIgnoreCase));
+                        bool j2Fixed = (j2 != null && string.Equals(j2.Type, "fixed", StringComparison.OrdinalIgnoreCase));
+
+                        if (j2Fixed && !j1Fixed)
+                        {
+                            childOcc = o2; parentOcc = o1; childLink = link2;
+                        }
+                        else
+                        {
+                            // default: OccurrenceOne como child (solo si no hay mejor señal)
+                            childOcc = o1; parentOcc = o2; childLink = link1;
+                        }
+                    }
+                }
+                else
+                {
+                    // Solo uno está en el mapa leaf:
+                    if (!string.IsNullOrEmpty(link1))
+                    {
+                        childOcc = o1; parentOcc = o2; childLink = link1;
+                    }
+                    else
+                    {
+                        childOcc = o2; parentOcc = o1; childLink = link2;
+                    }
                 }
 
-                UrdfJoint joint = FindJointByChildLink(robot, baseLinkName);
+                if (childOcc == null || string.IsNullOrEmpty(childLink))
+                    continue;
+
+                UrdfJoint joint = FindJointByChildLink(robot, childLink);
                 if (joint == null)
                 {
                     DebugLog("LINK",
                         "UpdateJointTypesFromConstraints: no se encontró JOINT para childLink='" +
-                        baseLinkName + "' (constraint '" + ac.Name + "').");
+                        childLink + "' (constraint '" + ac.Name + "').");
                     continue;
                 }
 
-                // Sólo reasignar si estaba como FIXED (para no pisar algo que se cambió antes)
+                // Solo reasignar si estaba FIXED (no pisar)
                 if (!string.Equals(joint.Type, "fixed", StringComparison.OrdinalIgnoreCase))
                 {
-                    DebugLog("LINK",
-                        "UpdateJointTypesFromConstraints: joint '" + joint.Name +
-                        "' ya es type='" + joint.Type + "', no se modifica desde constraint '" +
-                        ac.Name + "'.");
                     continue;
                 }
 
                 string newType = null;
-                double[] newAxis = null;
 
-                // -------- Mapeo básico por tipo de constraint --------
+                // Intentar extraer eje REAL (world) desde GeometryOne/Two o EntityOne/Two
+                double[] axisWorld = null;
+                string axisSrc = null;
+                bool gotAxis = TryExtractAxisWorldFromConstraint(ac, out axisWorld, out axisSrc);
+
+                // -------- Mapeo por tipo de constraint --------
                 if (ac is InsertConstraint)
                 {
-                    // InsertConstraint: típico eje rotacional (rueda/pin)
-                    newType = "continuous"; // rotación infinita
-                    newAxis = new double[] { 0.0, 0.0, 1.0 };
+                    newType = "continuous";
                 }
                 else if (ac is AngleConstraint)
                 {
-                    // AngleConstraint: rotación limitada (aunque aquí no leemos los límites)
                     newType = "revolute";
-                    newAxis = new double[] { 0.0, 0.0, 1.0 };
                 }
                 else if (ac is TransitionalConstraint)
                 {
-                    // TransitionalConstraint: desplazamiento lineal entre perfiles → prismatic
                     newType = "prismatic";
-                    newAxis = new double[] { 0.0, 0.0, 1.0 };
+                }
+                else if (ac is MateConstraint)
+                {
+                    // SOLO Mate “eje” (cilindro / workaxis / edge lineal) → DOF rotacional
+                    // Si no hay eje extraíble, lo dejamos como fixed.
+                    if (gotAxis)
+                        newType = "continuous";
+                    else
+                        newType = null;
                 }
                 else
                 {
-                    // Otros tipos (Mate, Flush, Tangent, etc.) se mantienen como fixed,
-                    // porque normalmente solo fijan o restringen, no definen un DOF explícito.
-                    DebugLog("LINK",
-                        "UpdateJointTypesFromConstraints: constraint '" + ac.Name +
-                        "' no mapeado a DOF (se deja joint FIXED). ObjectType=" +
-                        ac.Type.ToString());
+                    // Otros (Flush, Tangent, etc.) se dejan fixed
+                    newType = null;
                 }
 
-                if (!string.IsNullOrEmpty(newType))
+                if (string.IsNullOrEmpty(newType))
+                    continue;
+
+                joint.Type = newType;
+
+                // Si el joint es DOF y tenemos axis, convertirlo al frame del joint (child occurrence)
+                bool isFixed = string.Equals(joint.Type, "fixed", StringComparison.OrdinalIgnoreCase);
+                if (!isFixed && gotAxis && axisWorld != null && axisWorld.Length == 3)
                 {
-                    joint.Type = newType;
-                    if (newAxis != null && newAxis.Length == 3)
-                        joint.AxisXYZ = newAxis;
+                    Matrix childM = null;
+                    occToMatrix.TryGetValue(childOcc, out childM);
 
-                    string parentLinkName = joint.ParentLink ?? "base_link";
-                    string parentNameInfo = (parentOcc != null) ? parentOcc.Name : "(parent desconocido)";
+                    double[] axisLocal = AxisWorldToOccLocal(axisWorld, childM);
+                    if (axisLocal != null && axisLocal.Length == 3)
+                    {
+                        joint.AxisXYZ = axisLocal;
 
+                        DebugLog("LINK",
+                            "Constraint '" + ac.Name + "' → joint '" + joint.Name +
+                            "' type='" + joint.Type +
+                            "' axisSrc='" + (axisSrc ?? "unknown") +
+                            "' axis(local)=(" +
+                            axisLocal[0].ToString("G6", CultureInfo.InvariantCulture) + "," +
+                            axisLocal[1].ToString("G6", CultureInfo.InvariantCulture) + "," +
+                            axisLocal[2].ToString("G6", CultureInfo.InvariantCulture) + ")" +
+                            " childOcc='" + (childOcc != null ? childOcc.Name : "(null)") + "'");
+                    }
+                }
+                else
+                {
                     DebugLog("LINK",
-                        "UpdateJointTypesFromConstraints: constraint '" + ac.Name +
-                        "' → joint '" + joint.Name +
-                        "', parentLink='" + parentLinkName +
-                        "', childLink='" + joint.ChildLink +
-                        "', mappedType='" + newType +
-                        "', parentOcc='" + parentNameInfo + "'");
+                        "Constraint '" + ac.Name + "' → joint '" + joint.Name +
+                        "' type='" + joint.Type +
+                        "' (sin axis real, queda default o no aplica).");
                 }
             }
         }
+
+        // =====================================================
+        //  EXTRAER AXIS WORLD DESDE CONSTRAINT
+        //  - Prefiere GeometryOne/GeometryTwo (ya viene en espacio del assembly)
+        //  - Fallback a EntityOne/EntityTwo
+        //  - Soporta: Cylinder/Cone → AxisVector; WorkAxis/Line/LineSegment/Edge(lineal) → Direction
+        // =====================================================
+        private static bool TryExtractAxisWorldFromConstraint(
+            AssemblyConstraint ac,
+            out double[] axisWorld,
+            out string axisSource)
+        {
+            axisWorld = null;
+            axisSource = null;
+            if (ac == null) return false;
+
+            object g1 = null, g2 = null, e1 = null, e2 = null;
+
+            try
+            {
+                if (ac is MateConstraint)
+                {
+                    MateConstraint mc = (MateConstraint)ac;
+                    try { g1 = mc.GeometryOne; } catch { }
+                    try { g2 = mc.GeometryTwo; } catch { }
+                    try { e1 = mc.EntityOne; } catch { }
+                    try { e2 = mc.EntityTwo; } catch { }
+                }
+                else if (ac is InsertConstraint)
+                {
+                    InsertConstraint ic = (InsertConstraint)ac;
+                    try { g1 = ic.GeometryOne; } catch { }
+                    try { g2 = ic.GeometryTwo; } catch { }
+                    try { e1 = ic.EntityOne; } catch { }
+                    try { e2 = ic.EntityTwo; } catch { }
+                }
+                else if (ac is AngleConstraint)
+                {
+                    AngleConstraint ang = (AngleConstraint)ac;
+                    try { g1 = ang.GeometryOne; } catch { }
+                    try { g2 = ang.GeometryTwo; } catch { }
+                    try { e1 = ang.EntityOne; } catch { }
+                    try { e2 = ang.EntityTwo; } catch { }
+                }
+                else if (ac is TransitionalConstraint)
+                {
+                    TransitionalConstraint tc = (TransitionalConstraint)ac;
+                    try { g1 = tc.GeometryOne; } catch { }
+                    try { g2 = tc.GeometryTwo; } catch { }
+                    try { e1 = tc.EntityOne; } catch { }
+                    try { e2 = tc.EntityTwo; } catch { }
+                }
+                else
+                {
+                    // AssemblyConstraint base también tiene EntityOne/Two en muchos casos
+                    try { e1 = ac.EntityOne; } catch { }
+                    try { e2 = ac.EntityTwo; } catch { }
+                    try { g1 = ac.GeometryOne; } catch { }
+                    try { g2 = ac.GeometryTwo; } catch { }
+                }
+            }
+            catch
+            {
+                // si algo falla, seguimos con lo que tengamos
+            }
+
+            // 1) GeometryOne/Two
+            if (TryGetAxisFromAnyObject(g1, out axisWorld, out axisSource))
+                return true;
+            if (TryGetAxisFromAnyObject(g2, out axisWorld, out axisSource))
+                return true;
+
+            // 2) EntityOne/Two
+            if (TryGetAxisFromAnyObject(e1, out axisWorld, out axisSource))
+                return true;
+            if (TryGetAxisFromAnyObject(e2, out axisWorld, out axisSource))
+                return true;
+
+            return false;
+        }
+
+        private static bool TryGetAxisFromAnyObject(
+            object obj,
+            out double[] axisWorld,
+            out string source)
+        {
+            axisWorld = null;
+            source = null;
+            if (obj == null) return false;
+
+            try
+            {
+                // Geometrías directas (ya en espacio del assembly)
+                Cylinder cyl = obj as Cylinder;
+                if (cyl != null)
+                {
+                    UnitVector uv = cyl.AxisVector;
+                    axisWorld = Normalize3(new double[] { uv.X, uv.Y, uv.Z });
+                    source = "Cylinder.AxisVector";
+                    return axisWorld != null;
+                }
+
+                Cone cone = obj as Cone;
+                if (cone != null)
+                {
+                    UnitVector uv = cone.AxisVector;
+                    axisWorld = Normalize3(new double[] { uv.X, uv.Y, uv.Z });
+                    source = "Cone.AxisVector";
+                    return axisWorld != null;
+                }
+
+                Line line = obj as Line;
+                if (line != null)
+                {
+                    UnitVector uv = line.Direction;
+                    axisWorld = Normalize3(new double[] { uv.X, uv.Y, uv.Z });
+                    source = "Line.Direction";
+                    return axisWorld != null;
+                }
+
+                LineSegment seg = obj as LineSegment;
+                if (seg != null)
+                {
+                    UnitVector uv = seg.Direction;
+                    axisWorld = Normalize3(new double[] { uv.X, uv.Y, uv.Z });
+                    source = "LineSegment.Direction";
+                    return axisWorld != null;
+                }
+
+                // WorkAxis → Line
+                WorkAxis wa = obj as WorkAxis;
+                if (wa != null)
+                {
+                    Line wl = null;
+                    try { wl = wa.Line; } catch { wl = null; }
+                    if (wl != null)
+                    {
+                        UnitVector uv = wl.Direction;
+                        axisWorld = Normalize3(new double[] { uv.X, uv.Y, uv.Z });
+                        source = "WorkAxis.Line.Direction";
+                        return axisWorld != null;
+                    }
+                }
+
+                // Edge lineal → Geometry (Line / LineSegment)
+                Edge ed = obj as Edge;
+                if (ed != null)
+                {
+                    object geo = null;
+                    try { geo = ed.Geometry; } catch { geo = null; }
+                    if (geo != null)
+                    {
+                        if (TryGetAxisFromAnyObject(geo, out axisWorld, out source))
+                        {
+                            source = "Edge.Geometry→" + source;
+                            return true;
+                        }
+                    }
+                }
+
+                // Face cilíndrica → Geometry (Cylinder/Cone) (fallback)
+                Inventor.Face f = obj as Inventor.Face;
+                if (f != null)
+                {
+                    object geo = null;
+                    try { geo = f.Geometry; } catch { geo = null; }
+                    if (geo != null)
+                    {
+                        if (TryGetAxisFromAnyObject(geo, out axisWorld, out source))
+                        {
+                            source = "Face.Geometry→" + source;
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignorar
+            }
+
+            return false;
+        }
+
+        // =====================================================
+        //  AxisWorldToOccLocal:
+        //  axis_local = R^T * axis_world   (sin traslación)
+        // =====================================================
+        private static double[] AxisWorldToOccLocal(double[] axisWorld, Matrix occMatrix)
+        {
+            if (axisWorld == null || axisWorld.Length != 3)
+                return null;
+
+            double[] a = Normalize3(new double[] { axisWorld[0], axisWorld[1], axisWorld[2] });
+            if (a == null) return null;
+
+            // si no hay matriz, devolvemos el world ya normalizado
+            if (occMatrix == null)
+                return a;
+
+            double r11 = occMatrix.Cell[1, 1];
+            double r12 = occMatrix.Cell[1, 2];
+            double r13 = occMatrix.Cell[1, 3];
+
+            double r21 = occMatrix.Cell[2, 1];
+            double r22 = occMatrix.Cell[2, 2];
+            double r23 = occMatrix.Cell[2, 3];
+
+            double r31 = occMatrix.Cell[3, 1];
+            double r32 = occMatrix.Cell[3, 2];
+            double r33 = occMatrix.Cell[3, 3];
+
+            // local = R^T * world  (mismo patrón que TransformVerticesToLocalFrame)
+            double lx = r11 * a[0] + r21 * a[1] + r31 * a[2];
+            double ly = r12 * a[0] + r22 * a[1] + r32 * a[2];
+            double lz = r13 * a[0] + r23 * a[1] + r33 * a[2];
+
+            return Normalize3(new double[] { lx, ly, lz });
+        }
+
+        private static double[] Normalize3(double[] v)
+        {
+            if (v == null || v.Length != 3) return null;
+            double x = v[0], y = v[1], z = v[2];
+            double n = Math.Sqrt(x * x + y * y + z * z);
+            if (n < 1e-12) return null;
+            return new double[] { x / n, y / n, z / n };
+        }
+
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        //  (Continúa en BLOQUE 2/2: Collada, Inertial, URDF writer,
+        //   MatrixToRPY, clases RobotModel/UrdfLink/UrdfJoint, etc.)
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // -------------------------------------------------
         //  COLLADA (DAE) con referencia a textura PNG
@@ -2411,22 +2637,22 @@ namespace URDFConverterAddIn
             int[] indices)
         {
             if (vertices == null) vertices = new double[0];
-            if (indices  == null) indices  = new int[0];
+            if (indices == null) indices = new int[0];
 
             StringBuilder sb = new StringBuilder();
 
-            string geomId            = geometryName + "-geom";
-            string positionsId       = geometryName + "-positions";
-            string positionsArrayId  = positionsId + "-array";
-            string verticesId        = geometryName + "-verts";
+            string geomId = geometryName + "-geom";
+            string positionsId = geometryName + "-positions";
+            string positionsArrayId = positionsId + "-array";
+            string verticesId = geometryName + "-verts";
 
-            string imageId           = geometryName + "-image";
-            string effectId          = geometryName + "-effect";
-            string materialId        = geometryName + "-material";
-            string surfaceSid        = geometryName + "-surface";
-            string samplerSid        = geometryName + "-sampler";
+            string imageId = geometryName + "-image";
+            string effectId = geometryName + "-effect";
+            string materialId = geometryName + "-material";
+            string surfaceSid = geometryName + "-surface";
+            string samplerSid = geometryName + "-sampler";
 
-            string textureFileName   = geometryName + ".png";
+            string textureFileName = geometryName + ".png";
 
             sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             sb.AppendLine("<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" version=\"1.4.1\">");
@@ -2509,7 +2735,6 @@ namespace URDFConverterAddIn
             sb.AppendLine("        <vertices id=\"" + verticesId + "\">");
             sb.AppendLine("          <input semantic=\"POSITION\" source=\"#" + positionsId + "\"/>");
             sb.AppendLine("        </vertices>");
-
 
             int triCount = indices.Length / 3;
             sb.AppendLine("        <triangles material=\"" + materialId + "\" count=\"" + triCount.ToString(CultureInfo.InvariantCulture) + "\">");
@@ -2758,9 +2983,9 @@ namespace URDFConverterAddIn
 
                 sb.AppendLine("    <origin xyz=\"" + xyz + "\" rpy=\"" + rpy + "\"/>");
 
-                bool isFixed      = string.Equals(joint.Type, "fixed", StringComparison.OrdinalIgnoreCase);
-                bool isRevolute   = string.Equals(joint.Type, "revolute", StringComparison.OrdinalIgnoreCase);
-                bool isPrismatic  = string.Equals(joint.Type, "prismatic", StringComparison.OrdinalIgnoreCase);
+                bool isFixed = string.Equals(joint.Type, "fixed", StringComparison.OrdinalIgnoreCase);
+                bool isRevolute = string.Equals(joint.Type, "revolute", StringComparison.OrdinalIgnoreCase);
+                bool isPrismatic = string.Equals(joint.Type, "prismatic", StringComparison.OrdinalIgnoreCase);
                 bool isContinuous = string.Equals(joint.Type, "continuous", StringComparison.OrdinalIgnoreCase);
 
                 // Eje del joint (para revolute/prismatic/continuous)
@@ -2830,14 +3055,14 @@ namespace URDFConverterAddIn
             if (!singular)
             {
                 pitch = Math.Atan2(-r31, sy);
-                roll  = Math.Atan2(r32, r33);
-                yaw   = Math.Atan2(r21, r11);
+                roll = Math.Atan2(r32, r33);
+                yaw = Math.Atan2(r21, r11);
             }
             else
             {
                 pitch = Math.Atan2(-r31, sy);
-                roll  = 0.0;
-                yaw   = Math.Atan2(-r12, r22);
+                roll = 0.0;
+                yaw = Math.Atan2(-r12, r22);
             }
 
             DebugLog("TFM",
@@ -2861,7 +3086,7 @@ namespace URDFConverterAddIn
 
         public RobotModel()
         {
-            Links  = new List<UrdfLink>();
+            Links = new List<UrdfLink>();
             Joints = new List<UrdfJoint>();
         }
     }
@@ -2890,40 +3115,6 @@ namespace URDFConverterAddIn
         public double Ixz = 0.0;
     }
 
-    /*
-     * Tipos clásicos de joints en URDF (1–6) y usos típicos:
-     *
-     * 1) Revolute:
-     *    - Articulación rotacional con límites (mínimo/máximo).
-     *    - Es uno de los dos tipos más usados en robots seriales (brazos manipuladores),
-     *      porque aporta un grado de libertad rotacional (DOF) para orientar el efector final.
-     *
-     * 2) Prismatic:
-     *    - Articulación lineal con límites, que se desplaza a lo largo de un eje.
-     *    - Junto con Revolute, es el otro tipo más usado en robots seriales,
-     *      aportando un DOF traslacional para mover o posicionar el efector final.
-     *
-     * 3) Continuous:
-     *    - Rotación infinita sin límites (como una bisagra 360°).
-     *    - Ideal para ruedas, ejes que giran libremente o juntas que deben rotar sin fin.
-     *
-     * 4) Fixed:
-     *    - Sin grados de libertad (0 DOF).
-     *    - Fundamental para simplificar la cinemática cuando sólo queremos "pegar"
-     *      un modelo visual o de colisión a un eslabón principal sin movimiento relativo.
-     *
-     * 5) Floating:
-     *    - 6 DOF (3 traslacionales + 3 rotacionales).
-     *    - Se usa casi siempre para definir el joint de la base del robot respecto
-     *      al marco de referencia del mundo (world frame) en la simulación, permitiendo
-     *      que el robot se mueva libremente en el espacio.
-     *
-     * 6) Planar:
-     *    - 3 DOF (2 traslaciones + 1 rotación) restringidos a un plano.
-     *    - También se utiliza frecuentemente para modelar la base del robot sobre un plano
-     *      (por ejemplo, un robot móvil sobre el suelo), permitiendo movimiento libre en ese plano.
-     */
-
     public class UrdfJoint
     {
         public string Name;
@@ -2942,19 +3133,8 @@ namespace URDFConverterAddIn
             Type = "fixed";
             OriginXYZ = new double[] { 0.0, 0.0, 0.0 };
             OriginRPY = new double[] { 0.0, 0.0, 0.0 };
-            AxisXYZ   = new double[] { 0.0, 0.0, 1.0 }; // Z por defecto
+            AxisXYZ = new double[] { 0.0, 0.0, 1.0 }; // Z por defecto
         }
     }
 
 } // fin namespace URDFConverterAddIn
-
-
-
-
-
-
-
-
-
-
-
