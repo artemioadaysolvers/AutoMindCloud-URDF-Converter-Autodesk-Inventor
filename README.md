@@ -1,7 +1,6 @@
 # AutoMindCloud URDF Converter Plugin for AutoDesk Inventor 
 
-
-<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/05c0d724-c052-4cc5-b5ea-d0b4563f5dc2" />
-
+<img width="300" height="300" alt="526728501-374a00cf-9421-45d2-9f30-d7b552742b7a" src="https://github.com/user-attachments/assets/bb60adda-41fa-435c-a843-0786eed3d4c2" />
+ 
 <img width="300" height="300" alt="fc67eb75c04d4a87db559b961dda9786" src="https://github.com/user-attachments/assets/4f715f12-295f-4425-944c-e739a8f0e73e" />
 
