@@ -1202,19 +1202,22 @@ namespace URDFConverterAddIn
                 return true;
             }
 
-            // 3) common_Tint_color
-            if (TryGetColorFromNamedAssetValue(app, "common_Tint_color", out r, out g, out b))
-            {
-                DebugLog("MESH",
-                        "TryGetColorFromAssetWithPriority: usando common_Tint_color para " +
-                        ownerKind + "='" + ownerName + "'.");
-                return true;
-            }
-
-            // 4) generic_diffuse
+            // 3) generic_diffuse (ANTES de common_Tint_color para que salga el rojo en PNG)
             try
             {
-                AssetValue avDif = app["generic_diffuse"];
+                // Primero intenta por helper (si lo soporta)
+                if (TryGetColorFromNamedAssetValue(app, "generic_diffuse", out r, out g, out b))
+                {
+                    DebugLog("MESH",
+                            "TryGetColorFromAssetWithPriority: usando generic_diffuse para " +
+                            ownerKind + "='" + ownerName + "'.");
+                    return true;
+                }
+
+                // Fallback manual (por si el helper no entiende generic_diffuse)
+                AssetValue avDif = null;
+                try { avDif = app["generic_diffuse"]; } catch { avDif = null; }
+
                 if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
                 {
                     ColorAssetValue difCav = avDif as ColorAssetValue;
@@ -1243,6 +1246,39 @@ namespace URDFConverterAddIn
                 DebugLog("MESH",
                         "TryGetColorFromAssetWithPriority: " + ownerKind +
                         "='" + ownerName + "' sin generic_diffuse válido.");
+            }
+
+            // 4) common_Tint_color (solo si no hubo diffuse)
+            //    Además, si es gris (típico 80,80,80) no retornamos, para no pisar colores reales.
+            try
+            {
+                double tr, tg, tb;
+                if (TryGetColorFromNamedAssetValue(app, "common_Tint_color", out tr, out tg, out tb))
+                {
+                    bool isGrayish =
+                            Math.Abs(tr - tg) < 0.02 &&
+                            Math.Abs(tg - tb) < 0.02;
+
+                    if (!isGrayish)
+                    {
+                        r = tr;
+                        g = tg;
+                        b = tb;
+
+                        DebugLog("MESH",
+                                "TryGetColorFromAssetWithPriority: usando common_Tint_color para " +
+                                ownerKind + "='" + ownerName + "'.");
+                        return true;
+                    }
+
+                    DebugLog("MESH",
+                            "TryGetColorFromAssetWithPriority: common_Tint_color es grisáceo, se ignora para " +
+                            ownerKind + "='" + ownerName + "'.");
+                }
+            }
+            catch
+            {
+                // no-op, seguimos con el fallback general
             }
 
             // 5) primer AssetValue COLOR
@@ -1291,6 +1327,7 @@ namespace URDFConverterAddIn
                     ownerKind + "='" + ownerName + "'.");
             return false;
         }
+
 
         // =====================================================
         //  COLOR (Body y Face) + Fallback a Occurrence.Appearance
