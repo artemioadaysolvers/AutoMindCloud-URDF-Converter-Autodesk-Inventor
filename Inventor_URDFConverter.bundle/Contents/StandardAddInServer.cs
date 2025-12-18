@@ -3464,3 +3464,4 @@ namespace URDFConverterAddIn
         public double LimitVelocity = 0.0;
     }
 }
+
