@@ -1668,6 +1668,7 @@ namespace URDFConverterAddIn
         // =====================================================
         //  Helper central: PRIORIDAD de color dentro de un Asset
         // =====================================================
+
         private static bool TryGetColorFromAssetWithPriority(
             Asset app,
             string ownerKind,
@@ -1676,96 +1677,143 @@ namespace URDFConverterAddIn
             out double g,
             out double b)
         {
-            r = 0.8; g = 0.8; b = 0.8;
+                r = 0.8; g = 0.8; b = 0.8;
 
-            if (app == null)
-            {
-                DebugLog("MESH",
-                    "TryGetColorFromAssetWithPriority: " + ownerKind +
-                    "='" + ownerName + "' sin Asset, usando gris 0.8.");
-                return false;
-            }
-
-            LogAssetInfo(ownerKind, ownerName, app);
-
-            // 1) plasticvinyl_color
-            if (TryGetColorFromNamedAssetValue(app, "plasticvinyl_color", out r, out g, out b))
-                return true;
-
-            // 2) wallpaint_color
-            if (TryGetColorFromNamedAssetValue(app, "wallpaint_color", out r, out g, out b))
-                return true;
-
-            // 3) generic_diffuse (antes que tint)
-            try
-            {
-                if (TryGetColorFromNamedAssetValue(app, "generic_diffuse", out r, out g, out b))
-                    return true;
-
-                AssetValue avDif = null;
-                try { avDif = app["generic_diffuse"]; } catch { avDif = null; }
-
-                if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                if (app == null)
                 {
-                    ColorAssetValue difCav = avDif as ColorAssetValue;
-                    if (difCav != null)
-                    {
-                        Inventor.Color invCol1 = difCav.Value as Inventor.Color;
-                        if (invCol1 != null)
-                        {
-                            r = invCol1.Red / 255.0;
-                            g = invCol1.Green / 255.0;
-                            b = invCol1.Blue / 255.0;
-                            return true;
-                        }
-                    }
+                        DebugLog("MESH",
+                            "TryGetColorFromAssetWithPriority: " + ownerKind +
+                            "='" + ownerName + "' sin Asset, usando gris 0.8.");
+                        return false;
                 }
-            }
-            catch { }
 
-            // 4) common_Tint_color (solo si no es grisáceo)
-            try
-            {
-                double tr, tg, tb;
-                if (TryGetColorFromNamedAssetValue(app, "common_Tint_color", out tr, out tg, out tb))
-                {
-                    bool isGrayish =
-                        Math.Abs(tr - tg) < 0.02 &&
-                        Math.Abs(tg - tb) < 0.02;
+                LogAssetInfo(ownerKind, ownerName, app);
 
-                    if (!isGrayish)
-                    {
-                        r = tr; g = tg; b = tb;
+                // 1) generic_diffuse_color
+                if (TryGetColorFromNamedAssetValue(app, "generic_diffuse_color", out r, out g, out b))
                         return true;
-                    }
-                }
-            }
-            catch { }
 
-            // 5) primer AssetValue COLOR
-            try
-            {
-                foreach (AssetValue av in app)
+                // 2) generic_diffuse
+                if (TryGetColorFromNamedAssetValue(app, "generic_diffuse", out r, out g, out b))
+                        return true;
+
+                // 3) metallicpaint_base_color
+                if (TryGetColorFromNamedAssetValue(app, "metallicpaint_base_color", out r, out g, out b))
+                        return true;
+
+                // 4) plasticvinyl_color
+                if (TryGetColorFromNamedAssetValue(app, "plasticvinyl_color", out r, out g, out b))
+                        return true;
+
+                // 5) wallpaint_color
+                if (TryGetColorFromNamedAssetValue(app, "wallpaint_color", out r, out g, out b))
+                        return true;
+
+                // (Extra robustez: si el helper falla por cualquier razón, intenta acceso directo)
+                try
                 {
-                    if (av == null) continue;
-                    if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor) continue;
+                        AssetValue avDif = null;
 
-                    ColorAssetValue cav = av as ColorAssetValue;
-                    if (cav == null) continue;
+                        try { avDif = app["generic_diffuse_color"]; } catch { avDif = null; }
+                        if (avDif == null)
+                        {
+                                try { avDif = app["generic_diffuse"]; } catch { avDif = null; }
+                        }
 
-                    Inventor.Color invCol = cav.Value as Inventor.Color;
-                    if (invCol == null) continue;
-
-                    r = invCol.Red / 255.0;
-                    g = invCol.Green / 255.0;
-                    b = invCol.Blue / 255.0;
-                    return true;
+                        if (avDif != null && avDif.ValueType == AssetValueTypeEnum.kAssetValueTypeColor)
+                        {
+                                ColorAssetValue difCav = avDif as ColorAssetValue;
+                                if (difCav != null)
+                                {
+                                        Inventor.Color invCol1 = difCav.Value as Inventor.Color;
+                                        if (invCol1 != null)
+                                        {
+                                                r = invCol1.Red / 255.0;
+                                                g = invCol1.Green / 255.0;
+                                                b = invCol1.Blue / 255.0;
+                                                return true;
+                                        }
+                                }
+                        }
                 }
-            }
-            catch { }
+                catch { }
 
-            return false;
+                // 6) common_tint_color (solo si no es grisáceo)
+                try
+                {
+                        double tr, tg, tb;
+
+                        bool gotTint =
+                            TryGetColorFromNamedAssetValue(app, "common_tint_color", out tr, out tg, out tb) ||
+                            TryGetColorFromNamedAssetValue(app, "common_Tint_color", out tr, out tg, out tb);
+
+                        if (gotTint)
+                        {
+                                bool isGrayish =
+                                    Math.Abs(tr - tg) < 0.02 &&
+                                    Math.Abs(tg - tb) < 0.02;
+
+                                if (!isGrayish)
+                                {
+                                        r = tr; g = tg; b = tb;
+                                        return true;
+                                }
+                        }
+                }
+                catch { }
+
+                // 7) fallback: primer AssetValue COLOR con DisplayName == "Color"
+                try
+                {
+                        foreach (AssetValue av in app)
+                        {
+                                if (av == null) continue;
+                                if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor) continue;
+
+                                string dn = null;
+                                try { dn = av.DisplayName; } catch { dn = null; }
+                                if (dn == null) continue;
+                                if (!string.Equals(dn, "Color", StringComparison.OrdinalIgnoreCase)) continue;
+
+                                ColorAssetValue cav = av as ColorAssetValue;
+                                if (cav == null) continue;
+
+                                Inventor.Color invCol = cav.Value as Inventor.Color;
+                                if (invCol == null) continue;
+
+                                r = invCol.Red / 255.0;
+                                g = invCol.Green / 255.0;
+                                b = invCol.Blue / 255.0;
+                                return true;
+                        }
+                }
+                catch { }
+
+                // 8) fallback final: primer AssetValue COLOR cualquiera
+                try
+                {
+                        foreach (AssetValue av in app)
+                        {
+                                if (av == null) continue;
+                                if (av.ValueType != AssetValueTypeEnum.kAssetValueTypeColor) continue;
+
+                                ColorAssetValue cav = av as ColorAssetValue;
+                                if (cav == null) continue;
+
+                                Inventor.Color invCol = cav.Value as Inventor.Color;
+                                if (invCol == null) continue;
+
+                                r = invCol.Red / 255.0;
+                                g = invCol.Green / 255.0;
+                                b = invCol.Blue / 255.0;
+                                return true;
+                        }
+                }
+                catch { }
+
+                return false;
         }
+
 
         // =====================================================
         //  COLOR (Body y Face) + Fallback a Occurrence.Appearance
